@@ -1,0 +1,105 @@
+{
+  "project_info": {
+    "project_number": "994001206507",
+    "project_id": "smartaig-parents-app",
+    "storage_bucket": "smartaig-parents-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994001206507:android:4270667933e0d0a1ba92ae",
+        "android_client_info": {
+          "package_name": "com.security.manager.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYGRF58PD6C9Mv7Y2ifa-LWEQL25ulxBY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994001206507:android:26701b3502d713e4ba92ae",
+        "android_client_info": {
+          "package_name": "com.smartaig.admins.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYGRF58PD6C9Mv7Y2ifa-LWEQL25ulxBY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994001206507:android:d6f671c253050e6aba92ae",
+        "android_client_info": {
+          "package_name": "com.smartaig.front.desk.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYGRF58PD6C9Mv7Y2ifa-LWEQL25ulxBY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994001206507:android:ad12486ad4782c79ba92ae",
+        "android_client_info": {
+          "package_name": "com.smartaig.parents.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYGRF58PD6C9Mv7Y2ifa-LWEQL25ulxBY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994001206507:android:6592aabfbbc16e28ba92ae",
+        "android_client_info": {
+          "package_name": "com.smartaig.teachers.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYGRF58PD6C9Mv7Y2ifa-LWEQL25ulxBY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
