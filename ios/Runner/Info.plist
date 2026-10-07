@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Front Desk App needs camera access to scan Student and Staff Attendance QR codes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Front Desk App needs photo library access for profile and verification pictures.</string>
 	<key>INIntentsSupported</key>
 	<array>
 		<string>Intent</string>

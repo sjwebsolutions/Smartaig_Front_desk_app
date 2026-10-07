@@ -32,7 +32,11 @@ class DashboardResponseModel {
 
     data = DashboardData.fromJson(dataMap);
 
-    if (data?.staff != null || data?.todayStats != null || data?.callbackRequests != null) {
+    if (data?.staff != null ||
+        data?.todayStats != null ||
+        data?.callbackRequests != null ||
+        data?.studentLeaves != null ||
+        data?.teacherLeaves != null) {
       success = true;
     }
   }
@@ -53,6 +57,8 @@ class DashboardData {
   String? activeSession;
   DashboardSchool? school;
   TodayStats? todayStats;
+  LeaveStats? studentLeaves;
+  LeaveStats? teacherLeaves;
   CallbackRequests? callbackRequests;
   TodayInfo? todayInfo;
 
@@ -61,6 +67,8 @@ class DashboardData {
     this.activeSession,
     this.school,
     this.todayStats,
+    this.studentLeaves,
+    this.teacherLeaves,
     this.callbackRequests,
     this.todayInfo,
   });
@@ -78,6 +86,14 @@ class DashboardData {
 
     todayStats = json['today_stats'] != null && json['today_stats'] is Map<String, dynamic>
         ? TodayStats.fromJson(Map<String, dynamic>.from(json['today_stats']))
+        : null;
+
+    studentLeaves = json['student_leaves'] != null && json['student_leaves'] is Map<String, dynamic>
+        ? LeaveStats.fromJson(Map<String, dynamic>.from(json['student_leaves']))
+        : null;
+
+    teacherLeaves = json['teacher_leaves'] != null && json['teacher_leaves'] is Map<String, dynamic>
+        ? LeaveStats.fromJson(Map<String, dynamic>.from(json['teacher_leaves']))
         : null;
 
     callbackRequests = json['callback_requests'] != null && json['callback_requests'] is Map<String, dynamic>
@@ -101,12 +117,40 @@ class DashboardData {
     if (todayStats != null) {
       map['today_stats'] = todayStats!.toJson();
     }
+    if (studentLeaves != null) {
+      map['student_leaves'] = studentLeaves!.toJson();
+    }
+    if (teacherLeaves != null) {
+      map['teacher_leaves'] = teacherLeaves!.toJson();
+    }
     if (callbackRequests != null) {
       map['callback_requests'] = callbackRequests!.toJson();
     }
     if (todayInfo != null) {
       map['today_info'] = todayInfo!.toJson();
     }
+    return map;
+  }
+}
+
+class LeaveStats {
+  int? totalPendingCount;
+  int? todayPendingCount;
+
+  LeaveStats({
+    this.totalPendingCount,
+    this.todayPendingCount,
+  });
+
+  LeaveStats.fromJson(Map<String, dynamic> json) {
+    totalPendingCount = _parseInt(json['total_pending_count']);
+    todayPendingCount = _parseInt(json['today_pending_count']);
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> map = <String, dynamic>{};
+    map['total_pending_count'] = totalPendingCount;
+    map['today_pending_count'] = todayPendingCount;
     return map;
   }
 }

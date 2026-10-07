@@ -447,6 +447,40 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                                 );
                               },
                             ),
+
+                            const SizedBox(height: 10),
+
+                            // Button 5: Test Teacher Leave Notification
+                            _buildTestButton(
+                              icon: Icons.assignment_ind_rounded,
+                              label: 'Test Teacher Leave Alert + Sound',
+                              color: const Color(0xFF0284C7),
+                              bgColor: const Color(0xFFE0F2FE),
+                              onTap: () {
+                                NotificationService.instance.showTestTeacherLeaveNotification();
+                                AppSnackbar.showSuccess(
+                                  title: 'Teacher Leave Sound Test',
+                                  message: 'Check status bar for Teacher Leave alert & sound!',
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            // Button 6: Test Student Leave Notification
+                            _buildTestButton(
+                              icon: Icons.event_note_rounded,
+                              label: 'Test Student Leave Alert + Sound',
+                              color: const Color(0xFFE11D48),
+                              bgColor: const Color(0xFFFFE4E6),
+                              onTap: () {
+                                NotificationService.instance.showTestStudentLeaveNotification();
+                                AppSnackbar.showSuccess(
+                                  title: 'Student Leave Sound Test',
+                                  message: 'Check status bar for Student Leave alert & sound!',
+                                );
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -496,13 +530,16 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                                 'front_desk',
                                 'admission',
                                 'admissions',
-                                'admission_enquiries',
                                 'gate_pass',
                                 'gate_passes',
                                 'visitor',
                                 'visitors',
                                 'callbacks',
                                 'callback_requests',
+                                'teacher_leave',
+                                'teacher_leaves',
+                                'student_leave',
+                                'student_leaves',
                               ].map((topic) {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -559,6 +596,12 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                                       'callback',
                                       'callbacks',
                                       'callback_requests',
+                                      'teacher_leave',
+                                      'teacher_leaves',
+                                      'teacher_leave_requests',
+                                      'student_leave',
+                                      'student_leaves',
+                                      'student_leave_requests',
                                     ];
                                     for (final topic in topics) {
                                       await NotificationService.instance.subscribeToTopic(topic);

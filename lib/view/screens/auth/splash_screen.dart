@@ -148,24 +148,24 @@ class _SplashScreenState extends State<SplashScreen>
                             },
                           ),
                           Text(
-                            'SMART AIG FRONT DESK',
+                            'Smart AIG - Front Desk App',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
-                              fontSize: 18,
+                              fontSize: 22,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF2C3E50),
-                              letterSpacing: 2.0,
+                              letterSpacing: 1.0,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'ADMINISTRATIVE INFORMATIVE GROUP',
+                            'Administrative Info Group',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
-                              fontSize: 12,
+                              fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: const Color(0xFF64748B),
-                              letterSpacing: 1.1,
+                              letterSpacing: 5.0,
                             ),
                           ),
                         ],
@@ -174,21 +174,38 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                 ),
               ),
+
               Padding(
-                padding: const EdgeInsets.only(
-                  left: 80,
-                  right: 80,
-                  bottom: 40,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    color: const Color(0xFF4E54C8),
-                    backgroundColor: Colors.white.withValues(alpha: 0.6),
-                    minHeight: 5,
+                padding: const EdgeInsets.only(left: 25, right: 25, bottom: 40),
+                child: Container(
+                  width: double.infinity,
+                  height: 14,
+                  margin: const EdgeInsets.symmetric(horizontal: 50),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF4E54C8).withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Center(
+                    child: SizedBox(
+                      height: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: LinearProgressIndicator(
+                          borderRadius: const BorderRadius.all(Radius.circular(20)),
+                          color: const Color(0xFF4E54C8),
+                          backgroundColor: Colors.transparent,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
+
             ],
           ),
         ),

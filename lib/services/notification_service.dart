@@ -12,11 +12,16 @@ import '../view/screens/admission_screen.dart';
 import '../view/screens/call_back_screen.dart';
 import '../view/screens/callback_detail_screen.dart';
 import '../view/screens/get_pass_screen.dart';
+import '../view/screens/student_leave_screen.dart';
+import '../view/screens/teacher_leave_screen.dart';
 import '../view/screens/visitors_screen.dart';
 import '../view_models/get_x/admission_controller.dart';
 import '../view_models/get_x/callback_controller.dart';
+import '../view_models/get_x/dashboard_controller.dart';
 import '../view_models/get_x/gate_pass_controller.dart';
 import '../view_models/get_x/notification_history_controller.dart';
+import '../view_models/get_x/student_leave_controller.dart';
+import '../view_models/get_x/teacher_leave_controller.dart';
 import '../view_models/get_x/unread_counter_controller.dart';
 import '../view_models/get_x/visitor_controller.dart';
 
@@ -52,6 +57,24 @@ String detectNotificationCategory({
       combined.contains('dakhila') ||
       combined.contains('dakila')) {
     return 'admission';
+  } else if (combined.contains('teacher_leave') ||
+      combined.contains('teacher_leaves') ||
+      combined.contains('teacher leave') ||
+      combined.contains('teacherleave') ||
+      (combined.contains('teacher') && combined.contains('leave')) ||
+      (combined.contains('ustad') && combined.contains('chhutti'))) {
+    return 'teacher_leave';
+  } else if (combined.contains('student_leave') ||
+      combined.contains('student_leaves') ||
+      combined.contains('student leave') ||
+      (combined.contains('student') && combined.contains('leave')) ||
+      combined.contains('leave_request') ||
+      combined.contains('leave_status') ||
+      combined.contains('leave_approved') ||
+      combined.contains('leave_rejected') ||
+      combined.contains('leave_app') ||
+      combined.contains('leave')) {
+    return 'student_leave';
   } else if (combined.contains('gate') ||
       combined.contains('pass') ||
       combined.contains('getpass') ||
@@ -60,7 +83,6 @@ String detectNotificationCategory({
       combined.contains('exit') ||
       combined.contains('pickup') ||
       combined.contains('student_pass') ||
-      combined.contains('leave') ||
       combined.contains('chhutti')) {
     return 'gate_pass';
   } else if (combined.contains('visitor') ||
@@ -83,34 +105,159 @@ String detectNotificationCategory({
   return 'general';
 }
 
+/// Formats notification title with student/teacher name if available in FCM payload data
+String formatNotificationTitle({
+  required Map<String, dynamic> data,
+  required String rawTitle,
+  required String categoryType,
+}) {
+  final dataTitle = (data['title'] ?? data['heading'] ?? data['notification_title'] ?? '').toString().trim();
+  if (dataTitle.isNotEmpty && dataTitle != 'Front Desk Alert') {
+    return dataTitle;
+  }
+
+  final studentName = (data['student_name'] ?? data['student'] ?? data['name'] ?? '').toString().trim();
+  final teacherName = (data['teacher_name'] ?? data['teacher'] ?? data['name'] ?? '').toString().trim();
+
+  if (categoryType == 'student_leave') {
+    if (studentName.isNotEmpty) {
+      return '📝 Student Leave: $studentName';
+    }
+    return '📝 Student Leave Request Alert';
+  } else if (categoryType == 'teacher_leave') {
+    if (teacherName.isNotEmpty) {
+      return '📋 Teacher Leave: $teacherName';
+    }
+    return '📋 Teacher Leave Request Alert';
+  } else if (categoryType == 'gate_pass') {
+    if (studentName.isNotEmpty) {
+      return '🎫 Gate Pass: $studentName';
+    }
+    return '🎫 Gate Pass Request Alert';
+  }
+
+  if (rawTitle.isNotEmpty && rawTitle != 'Front Desk Alert') {
+    return rawTitle;
+  }
+  return 'Front Desk Alert';
+}
+
+/// Formats detailed notification body containing Student/Teacher Name, Class, Section, Session, Reason, Date etc.
+String formatNotificationBody({
+  required Map<String, dynamic> data,
+  required String rawBody,
+  required String categoryType,
+}) {
+  final studentName = (data['student_name'] ?? data['student'] ?? data['student_name_en'] ?? '').toString().trim();
+  final teacherName = (data['teacher_name'] ?? data['teacher'] ?? data['teacher_name_en'] ?? '').toString().trim();
+  final name = (data['name'] ?? '').toString().trim();
+
+  final className = (data['class_name'] ?? data['class'] ?? data['student_class'] ?? data['grade'] ?? '').toString().trim();
+  final sectionName = (data['section_name'] ?? data['section'] ?? data['student_section'] ?? '').toString().trim();
+  final session = (data['session'] ?? data['academic_session'] ?? data['session_year'] ?? data['session_name'] ?? '').toString().trim();
+  final reason = (data['reason'] ?? data['leave_reason'] ?? data['message'] ?? data['content'] ?? '').toString().trim();
+  final leaveDate = (data['date'] ?? data['leave_date'] ?? data['from_date'] ?? '').toString().trim();
+
+  final List<String> parts = [];
+
+  if (categoryType == 'student_leave' || categoryType == 'gate_pass') {
+    final sName = studentName.isNotEmpty ? studentName : name;
+    if (sName.isNotEmpty) {
+      parts.add('Name: $sName');
+    }
+
+    String classSec = '';
+    if (className.isNotEmpty) classSec += 'Class: $className';
+    if (sectionName.isNotEmpty) {
+      classSec += (classSec.isNotEmpty ? ' ($sectionName)' : 'Sec: $sectionName');
+    }
+    if (classSec.isNotEmpty) {
+      parts.add(classSec);
+    }
+
+    if (session.isNotEmpty) {
+      parts.add('Session: $session');
+    }
+
+    if (leaveDate.isNotEmpty) {
+      parts.add('Date: $leaveDate');
+    }
+
+    if (reason.isNotEmpty && reason != rawBody) {
+      parts.add('Reason: $reason');
+    }
+
+    if (parts.isNotEmpty) {
+      return parts.join(' | ');
+    }
+  } else if (categoryType == 'teacher_leave') {
+    final tName = teacherName.isNotEmpty ? teacherName : name;
+    if (tName.isNotEmpty) {
+      parts.add('Name: $tName');
+    }
+    if (session.isNotEmpty) {
+      parts.add('Session: $session');
+    }
+    if (leaveDate.isNotEmpty) {
+      parts.add('Date: $leaveDate');
+    }
+    if (reason.isNotEmpty && reason != rawBody) {
+      parts.add('Reason: $reason');
+    }
+
+    if (parts.isNotEmpty) {
+      return parts.join(' | ');
+    }
+  }
+
+  // Fallback if rawBody is informative
+  if (rawBody.isNotEmpty && rawBody != 'You have a new request in Front Desk App.') {
+    return rawBody;
+  }
+
+  return 'A new request has been received at reception.';
+}
+
 /// Top-level background message handler for Firebase Messaging.
 /// Must be annotated with @pragma('vm:entry-point') so Flutter VM can find it.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 
-  final title = message.notification?.title ??
+  final rawTitle = message.notification?.title ??
       message.data['title'] ??
       message.data['heading'] ??
       message.data['notification_title'] ??
       'Front Desk Alert';
 
-  final body = message.notification?.body ??
+  final rawBody = message.notification?.body ??
       message.data['body'] ??
       message.data['message'] ??
       message.data['content'] ??
       message.data['notification_body'] ??
       'You have a new request in Front Desk App.';
 
+  final categoryType = detectNotificationCategory(
+    data: message.data,
+    title: rawTitle,
+    body: rawBody,
+  );
+
+  final title = formatNotificationTitle(
+    data: message.data,
+    rawTitle: rawTitle,
+    categoryType: categoryType,
+  );
+
+  final body = formatNotificationBody(
+    data: message.data,
+    rawBody: rawBody,
+    categoryType: categoryType,
+  );
+
   debugPrint('📩 [FCM Background Message]: ID: ${message.messageId}');
   debugPrint('Title: $title | Body: $body');
   debugPrint('Payload Data: ${message.data}');
-
-  final categoryType = detectNotificationCategory(
-    data: message.data,
-    title: title,
-    body: body,
-  );
 
   // Save unread counter and notification history in SharedPreferences
   try {
@@ -118,6 +265,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     if (categoryType == 'admission') {
       final cur = prefs.getInt('unread_admission_count') ?? 0;
       await prefs.setInt('unread_admission_count', cur + 1);
+    } else if (categoryType == 'teacher_leave') {
+      final cur = prefs.getInt('unread_teacher_leave_count') ?? 0;
+      await prefs.setInt('unread_teacher_leave_count', cur + 1);
+    } else if (categoryType == 'student_leave') {
+      final cur = prefs.getInt('unread_student_leave_count') ?? 0;
+      await prefs.setInt('unread_student_leave_count', cur + 1);
     } else if (categoryType == 'gate_pass') {
       final cur = prefs.getInt('unread_gate_pass_count') ?? 0;
       await prefs.setInt('unread_gate_pass_count', cur + 1);
@@ -270,9 +423,9 @@ class NotificationService {
       // 5. Setup Foreground Presentation Options (iOS)
       try {
         await _fcm.setForegroundNotificationPresentationOptions(
-          alert: true,
+          alert: false, // Flutter local notifications handles foreground banner
           badge: true,
-          sound: true,
+          sound: false, // Flutter local notifications handles foreground sound
         );
       } catch (e) {
         debugPrint('⚠️ Error setting foreground notification options: $e');
@@ -337,6 +490,19 @@ class NotificationService {
           'callback_request',
           'call_requests',
           'call_request',
+          // Teacher Leave Topics
+          'teacher_leave',
+          'teacher_leaves',
+          'teacher_leave_requests',
+          'teacher_leave_request',
+          // Student Leave Topics
+          'student_leave',
+          'student_leaves',
+          'student_leave_requests',
+          'student_leave_request',
+          'leave_requests',
+          'leave_request',
+          'leaves',
         ];
         for (final topic in topics) {
           await subscribeToTopic(topic);
@@ -394,6 +560,7 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'default',
     );
 
     final platformDetails = NotificationDetails(
@@ -457,6 +624,7 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'default',
     );
 
     final platformDetails = NotificationDetails(
@@ -520,6 +688,7 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'default',
     );
 
     final platformDetails = NotificationDetails(
@@ -583,6 +752,7 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'default',
     );
 
     final platformDetails = NotificationDetails(
@@ -613,6 +783,134 @@ class NotificationService {
     debugPrint('🔊 [Callback Test Notification Banner & Sound Fired]');
   }
 
+  /// Trigger a test Teacher Leave notification with sound locally
+  Future<void> showTestTeacherLeaveNotification() async {
+    debugPrint('🔊 [NotificationService] Triggering Teacher Leave Test Notification with Sound...');
+
+    const title = '📋 Teacher Leave Request Alert';
+    const body = 'A teacher has submitted a new leave application.';
+
+    final androidDetails = AndroidNotificationDetails(
+      _channel.id,
+      _channel.name,
+      channelDescription: _channel.description,
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@mipmap/launcher_icon',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
+      color: const Color(0xFF0284C7),
+      playSound: true,
+      enableVibration: true,
+      audioAttributesUsage: AudioAttributesUsage.notification,
+      category: AndroidNotificationCategory.message,
+      visibility: NotificationVisibility.public,
+      ticker: 'Teacher Leave Request Alert',
+      styleInformation: const BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'Teacher Leave Alert',
+      ),
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'default',
+    );
+
+    final platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+    final payload = jsonEncode({
+      'type': 'teacher_leave',
+      'title': title,
+      'body': body,
+    });
+
+    UnreadCounterController.to.incrementTeacherLeave();
+    NotificationHistoryController.to.addNotification(
+      title: title,
+      body: body,
+      type: 'teacher_leave',
+      data: {'type': 'teacher_leave'},
+    );
+
+    await _localNotifications.show(
+      555,
+      title,
+      body,
+      platformDetails,
+      payload: payload,
+    );
+    debugPrint('🔊 [Teacher Leave Test Notification Banner & Sound Fired]');
+  }
+
+  /// Trigger a test Student Leave notification with sound locally
+  Future<void> showTestStudentLeaveNotification() async {
+    debugPrint('🔊 [NotificationService] Triggering Student Leave Test Notification with Sound...');
+
+    const title = '📝 Student Leave Request Alert';
+    const body = 'A new student leave request has been submitted by parent.';
+
+    final androidDetails = AndroidNotificationDetails(
+      _channel.id,
+      _channel.name,
+      channelDescription: _channel.description,
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@mipmap/launcher_icon',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
+      color: const Color(0xFFE11D48),
+      playSound: true,
+      enableVibration: true,
+      audioAttributesUsage: AudioAttributesUsage.notification,
+      category: AndroidNotificationCategory.message,
+      visibility: NotificationVisibility.public,
+      ticker: 'Student Leave Request Alert',
+      styleInformation: const BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'Student Leave Alert',
+      ),
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'default',
+    );
+
+    final platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+    final payload = jsonEncode({
+      'type': 'student_leave',
+      'title': title,
+      'body': body,
+    });
+
+    UnreadCounterController.to.incrementStudentLeave();
+    NotificationHistoryController.to.addNotification(
+      title: title,
+      body: body,
+      type: 'student_leave',
+      data: {'type': 'student_leave'},
+    );
+
+    await _localNotifications.show(
+      444,
+      title,
+      body,
+      platformDetails,
+      payload: payload,
+    );
+    debugPrint('🔊 [Student Leave Test Notification Banner & Sound Fired]');
+  }
+
   /// Legacy helper for testing callback notifications
   Future<void> showTestNotification() async {
     await showTestCallbackNotification();
@@ -626,8 +924,8 @@ class NotificationService {
     if (isTest) return false;
 
     final now = DateTime.now();
-    _recentNotificationKeys.removeWhere((_, time) => now.difference(time).inSeconds > 15);
-    _recentCategoryTimes.removeWhere((_, time) => now.difference(time).inSeconds > 10);
+    _recentNotificationKeys.removeWhere((_, time) => now.difference(time).inSeconds > 60);
+    _recentCategoryTimes.removeWhere((_, time) => now.difference(time).inSeconds > 60);
 
     final cleanTitle = title.trim().toLowerCase();
     final cleanBody = body.trim().toLowerCase();
@@ -639,12 +937,17 @@ class NotificationService {
       return true;
     }
 
-    // 2. For category types (admission, callback, gate_pass, visitor), suppress duplicate alerts of same category within 10s
-    if (categoryType == 'admission' || categoryType == 'callback' || categoryType == 'gate_pass' || categoryType == 'visitor') {
+    // 2. For category types (admission, callback, gate_pass, visitor, teacher_leave, student_leave), suppress duplicate alerts of same category within 60s
+    if (categoryType == 'admission' ||
+        categoryType == 'callback' ||
+        categoryType == 'gate_pass' ||
+        categoryType == 'visitor' ||
+        categoryType == 'teacher_leave' ||
+        categoryType == 'student_leave') {
       if (_recentCategoryTimes.containsKey(categoryType)) {
         final lastTime = _recentCategoryTimes[categoryType]!;
-        if (now.difference(lastTime).inSeconds < 10) {
-          debugPrint('⚡ [NotificationService] Category ($categoryType) duplicate suppressed within 10s window.');
+        if (now.difference(lastTime).inSeconds < 60) {
+          debugPrint('⚡ [NotificationService] Category ($categoryType) duplicate suppressed within 60s window.');
           return true;
         }
       }
@@ -659,7 +962,7 @@ class NotificationService {
   Future<void> showLocalAlert({
     required String title,
     required String body,
-    required String type, // 'admission', 'gate_pass', 'visitor', 'callback'
+    required String type, // 'admission', 'gate_pass', 'visitor', 'callback', 'teacher_leave', 'student_leave'
     Map<String, dynamic>? data,
     bool incrementUnread = false,
   }) async {
@@ -671,6 +974,10 @@ class NotificationService {
     if (incrementUnread) {
       if (type == 'admission') {
         UnreadCounterController.to.incrementAdmission();
+      } else if (type == 'teacher_leave') {
+        UnreadCounterController.to.incrementTeacherLeave();
+      } else if (type == 'student_leave') {
+        UnreadCounterController.to.incrementStudentLeave();
       } else if (type == 'gate_pass') {
         UnreadCounterController.to.incrementGatePass();
       } else if (type == 'visitor') {
@@ -684,13 +991,17 @@ class NotificationService {
 
     final categoryColor = type == 'admission'
         ? const Color(0xFF4F46E5)
-        : type == 'gate_pass'
-            ? const Color(0xFF0D9488)
-            : type == 'visitor'
-                ? const Color(0xFF2563EB)
-                : type == 'callback'
-                    ? const Color(0xFFDC2626)
-                    : const Color(0xFF4E54C8);
+        : type == 'teacher_leave'
+            ? const Color(0xFF0284C7)
+            : type == 'student_leave'
+                ? const Color(0xFFE11D48)
+                : type == 'gate_pass'
+                    ? const Color(0xFF0D9488)
+                    : type == 'visitor'
+                        ? const Color(0xFF2563EB)
+                        : type == 'callback'
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF4E54C8);
 
     final androidDetails = AndroidNotificationDetails(
       _channel.id,
@@ -712,13 +1023,17 @@ class NotificationService {
         contentTitle: title,
         summaryText: type == 'admission'
             ? 'Admission Enquiry Alert'
-            : type == 'gate_pass'
-                ? 'Gate Pass Alert'
-                : type == 'visitor'
-                    ? 'Visitor Log Alert'
-                    : type == 'callback'
-                        ? 'Callback Alert'
-                        : 'Front Desk Alert',
+            : type == 'teacher_leave'
+                ? 'Teacher Leave Alert'
+                : type == 'student_leave'
+                    ? 'Student Leave Alert'
+                    : type == 'gate_pass'
+                        ? 'Gate Pass Alert'
+                        : type == 'visitor'
+                            ? 'Visitor Log Alert'
+                            : type == 'callback'
+                                ? 'Callback Alert'
+                                : 'Front Desk Alert',
       ),
     );
 
@@ -726,6 +1041,7 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'default',
     );
 
     final platformDetails = NotificationDetails(
@@ -814,13 +1130,13 @@ class NotificationService {
   /// Listen to messages while app is in foreground and display banner
   void _listenForegroundMessages() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final title = message.notification?.title ??
+      final rawTitle = message.notification?.title ??
           message.data['title'] ??
           message.data['heading'] ??
           message.data['notification_title'] ??
           'Front Desk Alert';
 
-      final body = message.notification?.body ??
+      final rawBody = message.notification?.body ??
           message.data['body'] ??
           message.data['message'] ??
           message.data['content'] ??
@@ -829,8 +1145,20 @@ class NotificationService {
 
       final categoryType = detectNotificationCategory(
         data: message.data,
-        title: title,
-        body: body,
+        title: rawTitle,
+        body: rawBody,
+      );
+
+      final title = formatNotificationTitle(
+        data: message.data,
+        rawTitle: rawTitle,
+        categoryType: categoryType,
+      );
+
+      final body = formatNotificationBody(
+        data: message.data,
+        rawBody: rawBody,
+        categoryType: categoryType,
       );
 
       // Deduplicate foreground FCM message if already processed recently
@@ -847,6 +1175,16 @@ class NotificationService {
         UnreadCounterController.to.incrementAdmission();
         if (Get.isRegistered<AdmissionController>()) {
           try { Get.find<AdmissionController>().fetchAdmissionEnquiries(isSilent: true); } catch (_) {}
+        }
+      } else if (categoryType == 'teacher_leave') {
+        UnreadCounterController.to.incrementTeacherLeave();
+        if (Get.isRegistered<TeacherLeaveController>()) {
+          try { Get.find<TeacherLeaveController>().fetchTeacherLeaves(isManualRefresh: true); } catch (_) {}
+        }
+      } else if (categoryType == 'student_leave') {
+        UnreadCounterController.to.incrementStudentLeave();
+        if (Get.isRegistered<StudentLeaveController>()) {
+          try { Get.find<StudentLeaveController>().fetchStudentLeaves(isManualRefresh: true); } catch (_) {}
         }
       } else if (categoryType == 'gate_pass') {
         UnreadCounterController.to.incrementGatePass();
@@ -865,6 +1203,11 @@ class NotificationService {
         }
       }
 
+      // Refresh DashboardController silently to update baseline stats immediately and prevent duplicate alerts
+      if (Get.isRegistered<DashboardController>()) {
+        try { Get.find<DashboardController>().fetchDashboard(isSilent: true); } catch (_) {}
+      }
+
       // Add to NotificationHistoryController
       NotificationHistoryController.to.addNotification(
         title: title,
@@ -881,13 +1224,13 @@ class NotificationService {
   Future<void> _showNotificationBanner(RemoteMessage message) async {
     final notification = message.notification;
 
-    final title = notification?.title ??
+    final rawTitle = notification?.title ??
         message.data['title'] ??
         message.data['heading'] ??
         message.data['notification_title'] ??
         'Front Desk Alert';
 
-    final body = notification?.body ??
+    final rawBody = notification?.body ??
         message.data['body'] ??
         message.data['message'] ??
         message.data['content'] ??
@@ -899,19 +1242,35 @@ class NotificationService {
 
     final categoryType = detectNotificationCategory(
       data: message.data,
-      title: title,
-      body: body,
+      title: rawTitle,
+      body: rawBody,
+    );
+
+    final title = formatNotificationTitle(
+      data: message.data,
+      rawTitle: rawTitle,
+      categoryType: categoryType,
+    );
+
+    final body = formatNotificationBody(
+      data: message.data,
+      rawBody: rawBody,
+      categoryType: categoryType,
     );
 
     final categoryColor = categoryType == 'admission'
         ? const Color(0xFF4F46E5)
-        : categoryType == 'gate_pass'
-            ? const Color(0xFF0D9488)
-            : categoryType == 'visitor'
-                ? const Color(0xFF2563EB)
-                : categoryType == 'callback'
-                    ? const Color(0xFFDC2626)
-                    : const Color(0xFF4E54C8);
+        : categoryType == 'teacher_leave'
+            ? const Color(0xFF0284C7)
+            : categoryType == 'student_leave'
+                ? const Color(0xFFE11D48)
+                : categoryType == 'gate_pass'
+                    ? const Color(0xFF0D9488)
+                    : categoryType == 'visitor'
+                        ? const Color(0xFF2563EB)
+                        : categoryType == 'callback'
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF4E54C8);
 
     final androidDetails = AndroidNotificationDetails(
       _channel.id,
@@ -933,13 +1292,17 @@ class NotificationService {
         contentTitle: title,
         summaryText: categoryType == 'admission'
             ? 'Admission Enquiry Alert'
-            : categoryType == 'gate_pass'
-                ? 'Gate Pass Alert'
-                : categoryType == 'visitor'
-                    ? 'Visitor Log Alert'
-                    : categoryType == 'callback'
-                        ? 'Callback Alert'
-                        : 'Front Desk Alert',
+            : categoryType == 'teacher_leave'
+                ? 'Teacher Leave Alert'
+                : categoryType == 'student_leave'
+                    ? 'Student Leave Alert'
+                    : categoryType == 'gate_pass'
+                        ? 'Gate Pass Alert'
+                        : categoryType == 'visitor'
+                            ? 'Visitor Log Alert'
+                            : categoryType == 'callback'
+                                ? 'Callback Alert'
+                                : 'Front Desk Alert',
       ),
     );
 
@@ -947,6 +1310,7 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'default',
     );
 
     final platformDetails = NotificationDetails(
@@ -987,88 +1351,16 @@ class NotificationService {
     });
   }
 
-  /// Navigate or perform action based on FCM notification data
+  /// Handle Notification Click - Click navigation disabled per user request
   void _handleNotificationClick(RemoteMessage message) {
-    debugPrint('🔔 Handle notification click payload: ${message.data}');
-    final data = message.data;
-    final title = message.notification?.title ?? data['title'] ?? '';
-    final body = message.notification?.body ?? data['body'] ?? '';
-    final callbackIdStr = data['callback_id'] ?? data['id'];
-
-    final category = detectNotificationCategory(
-      data: data,
-      title: title,
-      body: body,
-    );
-
-    if (category == 'gate_pass') {
-      UnreadCounterController.to.clearGatePass();
-      Get.to(() => const GetPassScreen());
-    } else if (category == 'visitor') {
-      UnreadCounterController.to.clearVisitor();
-      Get.to(() => const VisitorsScreen());
-    } else if (category == 'admission') {
-      UnreadCounterController.to.clearAdmission();
-      final enquiryIdStr = data['admission_id'] ?? data['enquiry_id'] ?? data['id'];
-      if (enquiryIdStr != null && int.tryParse(enquiryIdStr.toString()) != null) {
-        final enquiryId = int.parse(enquiryIdStr.toString());
-        Get.to(() => AdmissionDetailScreen(enquiryId: enquiryId));
-      } else {
-        Get.to(() => const AdmissionScreen());
-      }
-    } else {
-      UnreadCounterController.to.clearCallback();
-      if (callbackIdStr != null && int.tryParse(callbackIdStr.toString()) != null) {
-        final callbackId = int.parse(callbackIdStr.toString());
-        Get.to(() => CallbackDetailScreen(callbackId: callbackId));
-      } else {
-        Get.to(() => const CallBackScreen());
-      }
-    }
+    debugPrint('🔔 [Notification Click Disabled]: User tapped notification. Data: ${message.data}');
+    // Do nothing on notification click
   }
 
-  /// Navigate on local notification banner tap
+  /// Handle local notification banner tap - Navigation disabled per user request
   void _handleLocalNotificationTap(String? payload) {
-    if (payload == null || payload.isEmpty) {
-      Get.to(() => const CallBackScreen());
-      return;
-    }
-
-    try {
-      final Map<String, dynamic> data = jsonDecode(payload);
-      final callbackIdStr = data['callback_id'] ?? data['id'];
-
-      final category = detectNotificationCategory(
-        data: data,
-      );
-
-      if (category == 'gate_pass') {
-        UnreadCounterController.to.clearGatePass();
-        Get.to(() => const GetPassScreen());
-      } else if (category == 'visitor') {
-        UnreadCounterController.to.clearVisitor();
-        Get.to(() => const VisitorsScreen());
-      } else if (category == 'admission') {
-        UnreadCounterController.to.clearAdmission();
-        final enquiryIdStr = data['admission_id'] ?? data['enquiry_id'] ?? data['id'];
-        if (enquiryIdStr != null && int.tryParse(enquiryIdStr.toString()) != null) {
-          final enquiryId = int.parse(enquiryIdStr.toString());
-          Get.to(() => AdmissionDetailScreen(enquiryId: enquiryId));
-        } else {
-          Get.to(() => const AdmissionScreen());
-        }
-      } else {
-        UnreadCounterController.to.clearCallback();
-        if (callbackIdStr != null && int.tryParse(callbackIdStr.toString()) != null) {
-          final callbackId = int.parse(callbackIdStr.toString());
-          Get.to(() => CallbackDetailScreen(callbackId: callbackId));
-        } else {
-          Get.to(() => const CallBackScreen());
-        }
-      }
-    } catch (e) {
-      Get.to(() => const CallBackScreen());
-    }
+    debugPrint('👆 [Local Notification Click Disabled]: User tapped banner. Payload: $payload');
+    // Do nothing on notification banner tap
   }
 
   /// Fetch device FCM Token

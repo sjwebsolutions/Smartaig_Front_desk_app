@@ -303,7 +303,16 @@ class _CallBackScreenState extends State<CallBackScreen> {
     final className = item.student?.className ?? '';
     final sectionName = item.student?.sectionName ?? '';
     final rollNo = item.student?.rollNo ?? '';
-    final reason = item.reason ?? 'No reason provided';
+    final reason = (item.reason != null && item.reason!.isNotEmpty)
+        ? item.reason!
+        : (item.description != null && item.description!.isNotEmpty)
+            ? item.description!
+            : 'No reason provided';
+    final description = (item.description != null &&
+            item.description!.isNotEmpty &&
+            item.description != item.reason)
+        ? item.description!
+        : null;
     final timeAgo = item.timeAgo ?? item.requestedAt ?? '';
     final latestNotes = item.latestLog?.notes;
 
@@ -536,7 +545,7 @@ class _CallBackScreenState extends State<CallBackScreen> {
 
                 const SizedBox(height: 10),
 
-                // ----------------- Reason Container -----------------
+                // ----------------- Reason & Description Container -----------------
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
@@ -573,6 +582,34 @@ class _CallBackScreenState extends State<CallBackScreen> {
                           color: const Color(0xFF334155),
                         ),
                       ),
+                      if (description != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.description_outlined, size: 14, color: Color(0xFF0284C7)),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Description:',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF0284C7),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          description,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                      ],
                       if (latestNotes != null && latestNotes.isNotEmpty && latestNotes != "Callback requested by parent. Reason: $reason") ...[
                         const SizedBox(height: 6),
                         Text(

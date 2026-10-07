@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:front_desk_app/services/app_update_service.dart';
 import 'package:front_desk_app/services/notification_service.dart';
 import 'package:front_desk_app/view/screens/auth/splash_screen.dart';
 
@@ -13,6 +14,11 @@ void main() async {
   } catch (e) {
     debugPrint('⚠️ Firebase initialize error in main(): $e');
   }
+
+  // Initialize App Update info (version & package name)
+  AppUpdateService.initPackageInfo().catchError((e) {
+    debugPrint('⚠️ AppUpdateService init error: $e');
+  });
 
   // Initialize notifications
   NotificationService.instance.initialize().catchError((e) {

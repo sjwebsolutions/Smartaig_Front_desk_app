@@ -173,6 +173,7 @@ class CallbackRequestItem {
   final int? id;
   final String? status;
   final String? reason;
+  final String? description;
   final String? requestedAt;
   final String? timeAgo;
   final CallbackParent? parent;
@@ -183,6 +184,7 @@ class CallbackRequestItem {
     this.id,
     this.status,
     this.reason,
+    this.description,
     this.requestedAt,
     this.timeAgo,
     this.parent,
@@ -194,7 +196,8 @@ class CallbackRequestItem {
     return CallbackRequestItem(
       id: json['id'] as int?,
       status: json['status'] as String?,
-      reason: json['reason'] as String?,
+      reason: (json['reason'] ?? json['description'] ?? json['details'])?.toString(),
+      description: (json['description'] ?? json['details'] ?? json['reason'])?.toString(),
       requestedAt: json['requested_at'] as String?,
       timeAgo: json['time_ago'] as String?,
       parent: json['parent'] != null ? CallbackParent.fromJson(json['parent'] as Map<String, dynamic>) : null,
@@ -208,6 +211,7 @@ class CallbackDetailItem {
   final int? id;
   final String? status;
   final String? reason;
+  final String? description;
   final String? requestedAt;
   final String? timeAgo;
   final String? completedAt;
@@ -219,6 +223,7 @@ class CallbackDetailItem {
     this.id,
     this.status,
     this.reason,
+    this.description,
     this.requestedAt,
     this.timeAgo,
     this.completedAt,
@@ -231,7 +236,8 @@ class CallbackDetailItem {
     return CallbackDetailItem(
       id: json['id'] as int?,
       status: json['status'] as String?,
-      reason: json['reason'] as String?,
+      reason: (json['reason'] ?? json['description'] ?? json['details'])?.toString(),
+      description: (json['description'] ?? json['details'] ?? json['reason'])?.toString(),
       requestedAt: json['requested_at'] as String?,
       timeAgo: json['time_ago'] as String?,
       completedAt: json['completed_at'] as String?,
@@ -274,7 +280,7 @@ class CallbackLogItem {
       id: json['id'] as int?,
       action: json['action'] as String?,
       callStatus: json['call_status'] as String?,
-      notes: json['notes'] as String?,
+      notes: (json['notes'] ?? json['description'] ?? json['remark'])?.toString(),
       previousStatus: json['previous_status'] as String?,
       newStatus: json['new_status'] as String?,
       staffName: json['staff_name'] as String?,
@@ -347,7 +353,7 @@ class CallbackLatestLog {
   factory CallbackLatestLog.fromJson(Map<String, dynamic> json) {
     return CallbackLatestLog(
       callStatus: json['call_status'] as String?,
-      notes: json['notes'] as String?,
+      notes: (json['notes'] ?? json['description'] ?? json['remark'])?.toString(),
       staffName: json['staff_name'] as String?,
       createdAt: json['created_at'] as String?,
     );

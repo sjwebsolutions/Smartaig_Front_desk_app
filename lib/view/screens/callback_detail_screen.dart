@@ -390,33 +390,83 @@ class _CallbackDetailScreenState extends State<CallbackDetailScreen> {
 
                                 const SizedBox(height: 16),
 
-                                // Reason Container
-                                Text(
-                                  'REASON FOR CALLBACK',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF64748B),
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFFBEB),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: const Color(0xFFFDE68A)),
-                                  ),
-                                  child: Text(
-                                    detail.reason ?? 'No reason provided',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 13,
-                                      color: const Color(0xFF92400E),
-                                      height: 1.4,
-                                    ),
-                                  ),
+                                // Reason & Description Container
+                                Builder(
+                                  builder: (context) {
+                                    final detailReason = (detail.reason != null && detail.reason!.isNotEmpty)
+                                        ? detail.reason!
+                                        : (detail.description != null && detail.description!.isNotEmpty)
+                                            ? detail.description!
+                                            : 'No reason provided';
+                                    final detailDesc = (detail.description != null &&
+                                            detail.description!.isNotEmpty &&
+                                            detail.description != detail.reason)
+                                        ? detail.description
+                                        : null;
+
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'REASON FOR CALLBACK',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF64748B),
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFFFBEB),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: const Color(0xFFFDE68A)),
+                                          ),
+                                          child: Text(
+                                            detailReason,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              color: const Color(0xFF92400E),
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        ),
+                                        if (detailDesc != null) ...[
+                                          const SizedBox(height: 14),
+                                          Text(
+                                            'DESCRIPTION',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFF64748B),
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF0F9FF),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: const Color(0xFFBAE6FD)),
+                                            ),
+                                            child: Text(
+                                              detailDesc,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 13,
+                                                color: const Color(0xFF0369A1),
+                                                height: 1.4,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    );
+                                  },
                                 ),
                               ],
                             ),

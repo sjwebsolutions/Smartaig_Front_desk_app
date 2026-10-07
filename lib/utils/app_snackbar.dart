@@ -88,4 +88,90 @@ class AppSnackbar {
       isDismissible: true,
     );
   }
+
+  /// Show an amber warning snackbar
+  static void showWarning({
+    required String title,
+    required String message,
+    Duration duration = const Duration(seconds: 4),
+  }) {
+    if (Get.isSnackbarOpen) {
+      Get.closeAllSnackbars();
+    }
+    Get.rawSnackbar(
+      titleText: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: Colors.white,
+        ),
+      ),
+      messageText: Text(
+        message,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.normal,
+          fontSize: 12,
+          color: Colors.white,
+        ),
+      ),
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: const Color(0xFFD97706), // Vibrant Amber/Orange
+      icon: const Padding(
+        padding: EdgeInsets.only(left: 12.0, right: 6.0),
+        child: Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      borderRadius: 12,
+      duration: duration,
+      animationDuration: const Duration(milliseconds: 600),
+      forwardAnimationCurve: Curves.easeOutCubic,
+      reverseAnimationCurve: Curves.easeInCubic,
+      snackStyle: SnackStyle.FLOATING,
+      isDismissible: true,
+    );
+  }
+
+  /// Show a blue info snackbar
+  static void showInfo({
+    required String title,
+    required String message,
+    Duration duration = const Duration(seconds: 4),
+  }) {
+    if (Get.isSnackbarOpen) {
+      Get.closeAllSnackbars();
+    }
+    Get.rawSnackbar(
+      titleText: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: Colors.white,
+        ),
+      ),
+      messageText: Text(
+        message,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.normal,
+          fontSize: 12,
+          color: Colors.white,
+        ),
+      ),
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: const Color(0xFF0284C7), // Vibrant Blue
+      icon: const Padding(
+        padding: EdgeInsets.only(left: 12.0, right: 6.0),
+        child: Icon(Icons.info_outline_rounded, color: Colors.white, size: 24),
+      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      borderRadius: 12,
+      duration: duration,
+      animationDuration: const Duration(milliseconds: 600),
+      forwardAnimationCurve: Curves.easeOutCubic,
+      reverseAnimationCurve: Curves.easeInCubic,
+      snackStyle: SnackStyle.FLOATING,
+      isDismissible: true,
+    );
+  }
 }
