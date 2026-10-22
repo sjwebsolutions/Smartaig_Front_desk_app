@@ -17,6 +17,7 @@ class UnreadCounterController extends GetxController {
   var teacherLeaveCount = 0.obs;
   var studentCount = 0.obs;
   var scanAttendanceCount = 0.obs;
+  var transportCount = 0.obs;
 
   @override
   void onInit() {
@@ -35,6 +36,7 @@ class UnreadCounterController extends GetxController {
       teacherLeaveCount.value = prefs.getInt('unread_teacher_leave_count') ?? 0;
       studentCount.value = prefs.getInt('unread_student_count') ?? 0;
       scanAttendanceCount.value = prefs.getInt('unread_scan_attendance_count') ?? 0;
+      transportCount.value = prefs.getInt('unread_transport_count') ?? 0;
     } catch (_) {}
   }
 
@@ -102,6 +104,14 @@ class UnreadCounterController extends GetxController {
     } catch (_) {}
   }
 
+  Future<void> incrementTransport() async {
+    transportCount.value++;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('unread_transport_count', transportCount.value);
+    } catch (_) {}
+  }
+
   Future<void> clearCallback() async {
     callbackCount.value = 0;
     try {
@@ -163,6 +173,14 @@ class UnreadCounterController extends GetxController {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('unread_scan_attendance_count', 0);
+    } catch (_) {}
+  }
+
+  Future<void> clearTransportCount() async {
+    transportCount.value = 0;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('unread_transport_count', 0);
     } catch (_) {}
   }
 }

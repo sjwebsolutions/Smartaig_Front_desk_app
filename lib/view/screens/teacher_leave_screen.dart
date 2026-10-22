@@ -47,11 +47,20 @@ class _TeacherLeaveScreenState extends State<TeacherLeaveScreen> {
               // TOP APP BAR
               // -------------------------------------------------
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 22),
+                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 18),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: const CircleBorder(),
+                        elevation: 2,
+                        shadowColor: Colors.black12,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       onPressed: () => Get.back(),
                       tooltip: 'Back',
                     ),
@@ -206,7 +215,7 @@ class _TeacherLeaveScreenState extends State<TeacherLeaveScreen> {
                     color: const Color(0xFF0284C7),
                     onRefresh: () async => _controller.fetchTeacherLeaves(isManualRefresh: true),
                     child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(14, 2, 14, 20),
+                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 20),
                       itemCount: list.length,
                       itemBuilder: (context, index) {
                         return _buildTeacherLeaveCard(list[index]);
@@ -224,29 +233,21 @@ class _TeacherLeaveScreenState extends State<TeacherLeaveScreen> {
 
   Widget _buildSummaryCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Row(
         children: [
-          _buildStatItem(
-            label: 'Total',
-            count: _controller.totalCount,
-            color: const Color(0xFF2563EB),
-            bgColor: const Color(0xFFEFF6FF),
-            icon: Icons.assignment_rounded,
-          ),
-          _buildStatDivider(),
           _buildStatItem(
             label: 'Pending',
             count: _controller.pendingCount,
@@ -270,6 +271,14 @@ class _TeacherLeaveScreenState extends State<TeacherLeaveScreen> {
             bgColor: const Color(0xFFFEF2F2),
             icon: Icons.cancel_rounded,
           ),
+          _buildStatDivider(),
+          _buildStatItem(
+            label: 'Total',
+            count: _controller.totalCount,
+            color: const Color(0xFF2563EB),
+            bgColor: const Color(0xFFEFF6FF),
+            icon: Icons.assignment_rounded,
+          ),
         ],
       ),
     );
@@ -290,30 +299,30 @@ class _TeacherLeaveScreenState extends State<TeacherLeaveScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(3.5),
+                padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   color: bgColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 12, color: color),
+                child: Icon(icon, size: 14, color: color),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 5),
               Text(
                 '$count',
                 style: GoogleFonts.poppins(
-                  fontSize: 15,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF0F172A),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             label,
             style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
               color: const Color(0xFF64748B),
             ),
             maxLines: 1,
@@ -336,11 +345,6 @@ class _TeacherLeaveScreenState extends State<TeacherLeaveScreen> {
   Widget _buildStatusFilterTabs() {
     final filters = [
       {
-        'label': 'All',
-        'key': 'all',
-        'color': const Color(0xFF2563EB),
-      },
-      {
         'label': 'Pending',
         'key': 'pending',
         'color': const Color(0xFFD97706),
@@ -354,6 +358,11 @@ class _TeacherLeaveScreenState extends State<TeacherLeaveScreen> {
         'label': 'Rejected',
         'key': 'rejected',
         'color': const Color(0xFFDC2626),
+      },
+      {
+        'label': 'All',
+        'key': 'all',
+        'color': const Color(0xFF2563EB),
       },
     ];
 
@@ -469,15 +478,32 @@ class _TeacherLeaveScreenState extends State<TeacherLeaveScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        leave.teacherName,
-                        softWrap: true,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1E293B),
-                          height: 1.2,
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: leave.teacherName,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1E293B),
+                                height: 1.2,
+                              ),
+                            ),
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: Image.asset(
+                                  'assets/images/blue_tick.png',
+                                  width: 14,
+                                  height: 14,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        softWrap: true,
                       ),
                       const SizedBox(height: 3),
                       Wrap(

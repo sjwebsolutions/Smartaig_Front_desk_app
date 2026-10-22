@@ -17,7 +17,7 @@ class CallbackController extends GetxController {
   var detailErrorMessage = ''.obs;
   var selectedDetail = Rxn<CallbackDetailItem>();
 
-  var selectedStatus = 'all'.obs; // 'all', 'pending', 'in_progress', 'completed'
+  var selectedStatus = 'pending'.obs; // 'pending', 'in_progress', 'completed', 'all'
   var selectedDate = ''.obs; // YYYY-MM-DD
   var currentPage = 1.obs;
 

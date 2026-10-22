@@ -65,11 +65,20 @@ class _AdmissionDetailScreenState extends State<AdmissionDetailScreen> {
               // APP BAR
               // -------------------------------------------------
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 22),
+                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 18),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: const CircleBorder(),
+                        elevation: 2,
+                        shadowColor: Colors.black12,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       onPressed: () => Get.back(),
                       tooltip: 'Back',
                     ),
@@ -173,7 +182,7 @@ class _AdmissionDetailScreenState extends State<AdmissionDetailScreen> {
                     onRefresh: () => _controller.fetchAdmissionDetail(widget.enquiryId),
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
+                      padding: const EdgeInsets.only(left: 12, right: 12, top: 6, bottom: 80),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

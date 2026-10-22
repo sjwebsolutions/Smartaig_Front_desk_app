@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../Widgets/infinity_loader.dart';
+import '../../Widgets/custom_shimmer.dart';
 import '../../Widgets/menu.dart';
 import '../../Widgets/modules.dart';
 import '../../models/dashboard_model.dart';
@@ -39,6 +39,7 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawerEnableOpenDragGesture: false,
       drawer: const DashboardDrawer(),
       body: Container(
         width: double.infinity,
@@ -56,9 +57,7 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
         child: SafeArea(
           child: Obx(() {
             if (_controller.isLoading.value && _controller.dashboardData.value == null) {
-              return const Center(
-                child: InfinityLoader(),
-              );
+              return const DashboardShimmerSkeleton();
             }
 
             if (_controller.errorMessage.value.isNotEmpty && _controller.dashboardData.value == null) {
@@ -141,7 +140,7 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
                   // COMPACT TOP APP BAR (MENU ON LEFT, DASHBOARD IN CENTER)
                   // -------------------------------------------------
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     child: Row(
                       children: [
                         Builder(
@@ -218,26 +217,26 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 6),
                           // 1. STAFF PROFILE CARD
                           _buildStaffProfileCard(staff, school),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 10),
 
                           // 2. TODAY'S OVERVIEW / STATS
                           if (todayInfo != null || todayStats != null) ...[
                             _buildTodayStatsSection(todayInfo, todayStats),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
                           ],
 
                           // 3. CALLBACK REQUESTS OVERVIEW
                           if (callbackRequests != null &&
                               ((callbackRequests.pending ?? 0) > 0 || (callbackRequests.inProgress ?? 0) > 0)) ...[
                             _buildCallbackRequestsCard(callbackRequests),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
                           ],
 
                           // 4. STUDENT & TEACHER LEAVE REQUESTS OVERVIEW
@@ -251,7 +250,7 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
                               leaveStats: studentLeaves,
                               unreadCount: UnreadCounterController.to.studentLeaveCount.value,
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
                           ],
 
                           if (teacherLeaves != null &&
@@ -264,12 +263,12 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
                               leaveStats: teacherLeaves,
                               unreadCount: UnreadCounterController.to.teacherLeaveCount.value,
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
                           ],
 
                             // 5. FRONT DESK MODULES
                             const DashboardModulesWidget(),
-                            const SizedBox(height: 25),
+                            const SizedBox(height: 90),
                           ],
                         ),
                       ),
@@ -305,7 +304,7 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -318,7 +317,7 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             child: Container(
               width: 62,
               height: 62,
@@ -348,18 +347,35 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Text(
-                        staff?.name ?? 'Staff Member',
-                        softWrap: true,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF2C3E50),
-                          height: 1.25,
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: staff?.name ?? 'Staff Member',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF2C3E50),
+                                height: 1.25,
+                              ),
+                            ),
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: Image.asset(
+                                  'assets/images/blue_tick.png',
+                                  width: 16,
+                                  height: 16,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        softWrap: true,
                       ),
                     ),
                     if (status != null && status.isNotEmpty) ...[
@@ -433,15 +449,32 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
                 ),
                 if (school?.name != null && school!.name!.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    school.name!,
-                    softWrap: true,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: const Color(0xFF4E54C8),
-                      fontWeight: FontWeight.w600,
-                      height: 1.25,
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: school.name!,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: const Color(0xFF4E54C8),
+                            fontWeight: FontWeight.w600,
+                            height: 1.25,
+                          ),
+                        ),
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Image.asset(
+                              'assets/images/blue_tick.png',
+                              width: 14,
+                              height: 14,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    softWrap: true,
                   ),
                 ],
               ],

@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../utils/app_snackbar.dart';
+import '../../../utils/token_manager.dart';
 import '../../../view_models/get_x/auth_controller.dart';
 import 'manual_login_screen.dart';
 import 'otp_screen.dart';
@@ -179,11 +181,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? null
                                   : () async {
                                       if (_phoneController.text.length == 10) {
+                                        final uuid = await TokenManager.getDeviceUuid();
+                                        final isIos = defaultTargetPlatform == TargetPlatform.iOS;
                                         bool success = await _authController.sendOtp(
                                           whatsappNumber: _phoneController.text,
-                                          deviceUuid: 'device-uuid-12345',
-                                          deviceName: 'Android Phone',
-                                          deviceOs: 'Android',
+                                          deviceUuid: uuid,
+                                          deviceName: isIos ? 'iPhone' : 'Android Phone',
+                                          deviceOs: isIos ? 'iOS' : 'Android',
                                         );
                                         if (success) {
                                           Get.to(() => OtpScreen(whatsappNumber: _phoneController.text));

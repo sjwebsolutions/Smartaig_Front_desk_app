@@ -8,6 +8,7 @@ import '../services/app_update_service.dart';
 import '../utils/app_snackbar.dart';
 import '../utils/token_manager.dart';
 import '../view/screens/auth/login_screen.dart';
+import '../view/screens/settings_screen.dart';
 import '../view_models/get_x/dashboard_controller.dart';
 import '../view_models/get_x/policies_controller.dart';
 import '../view_models/get_x/support_controller.dart';
@@ -100,14 +101,32 @@ class DashboardDrawer extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              staff?.name ?? 'Staff Name',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF2C3E50),
-                                height: 1.25,
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: staff?.name ?? 'Staff Name',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF2C3E50),
+                                      height: 1.25,
+                                    ),
+                                  ),
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(left: 4),
+                                      child: Image.asset(
+                                        'assets/images/blue_tick.png',
+                                        width: 14,
+                                        height: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              softWrap: true,
                             ),
                             const SizedBox(height: 3),
                             Wrap(
@@ -143,15 +162,32 @@ class DashboardDrawer extends StatelessWidget {
                             ),
                             if (school?.name != null && school!.name!.isNotEmpty) ...[
                               const SizedBox(height: 3),
-                              Text(
-                                school.name!,
-                                softWrap: true,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 11,
-                                  color: const Color(0xFF4E54C8),
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.25,
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: school.name!,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 11,
+                                        color: const Color(0xFF4E54C8),
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.25,
+                                      ),
+                                    ),
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.middle,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 4),
+                                        child: Image.asset(
+                                          'assets/images/blue_tick.png',
+                                          width: 13,
+                                          height: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                                softWrap: true,
                               ),
                             ],
                           ],
@@ -159,6 +195,20 @@ class DashboardDrawer extends StatelessWidget {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 15),
+
+                // Settings Screen Option
+                _buildMenuCard(
+                  icon: Icons.settings_rounded,
+                  iconColor: const Color(0xFF4E54C8),
+                  iconBg: const Color(0xFFEEF2FF),
+                  title: 'App Settings',
+                  subtitle: 'Profile, support, rules & account',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Get.to(() => const SettingsScreen());
+                  },
                 ),
                 const SizedBox(height: 15),
 

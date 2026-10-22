@@ -1,10 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../utils/app_snackbar.dart';
+import '../../../utils/token_manager.dart';
 import '../../../view_models/get_x/auth_controller.dart';
-import '../dashboard.dart';
+import '../main_screen.dart';
 
 class ManualLoginScreen extends StatefulWidget {
   final String? initialPhone;
@@ -56,16 +58,18 @@ class _ManualLoginScreenState extends State<ManualLoginScreen> {
       return;
     }
 
+    final uuid = await TokenManager.getDeviceUuid();
+    final isIos = defaultTargetPlatform == TargetPlatform.iOS;
     bool success = await _authController.verifyOtp(
       whatsappNumber: phone,
       otpCode: otp,
-      deviceUuid: 'device-uuid-12345',
-      deviceName: 'Android Phone',
-      deviceOs: 'Android',
+      deviceUuid: uuid,
+      deviceName: isIos ? 'iPhone' : 'Android Phone',
+      deviceOs: isIos ? 'iOS' : 'Android',
     );
 
     if (success) {
-      Get.offAll(() => const FrontDeskDashboard());
+      Get.offAll(() => const MainScreen());
     }
   }
 
@@ -103,12 +107,15 @@ class _ManualLoginScreenState extends State<ManualLoginScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: IconButton(
                     onPressed: () => Get.back(),
-                    icon: const Icon(Icons.chevron_left_rounded, color: Color(0xFF334155), size: 26),
+                    constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 18),
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.white,
                       shape: const CircleBorder(),
                       elevation: 2,
                       shadowColor: Colors.black.withValues(alpha: 0.08),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
                 ),

@@ -5,11 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/notification_model.dart';
 import '../../services/notification_service.dart';
 import '../../view_models/get_x/notification_history_controller.dart';
-import '../../view_models/get_x/unread_counter_controller.dart';
-import 'call_back_screen.dart';
-import 'callback_detail_screen.dart';
-import 'get_pass_screen.dart';
-import 'visitors_screen.dart';
 
 class NotificationListScreen extends StatefulWidget {
   const NotificationListScreen({super.key});
@@ -56,12 +51,21 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
               // TOP APP BAR
               // -------------------------------------------------
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Row(
                   children: [
                     IconButton(
+                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                      padding: EdgeInsets.zero,
                       icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Color(0xFF2C3E50), size: 22),
+                          color: Color(0xFF2C3E50), size: 18),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: const CircleBorder(),
+                        elevation: 2,
+                        shadowColor: Colors.black12,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       onPressed: () => Get.back(),
                       tooltip: 'Back',
                     ),
@@ -100,7 +104,10 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                   final filteredList = allList.where((item) {
                     final resolvedType = (item.type == 'gate_pass' ||
                             item.type == 'visitor' ||
-                            item.type == 'callback')
+                            item.type == 'callback' ||
+                            item.type == 'student_leave' ||
+                            item.type == 'teacher_leave' ||
+                            item.type == 'admission')
                         ? item.type
                         : detectNotificationCategory(
                             data: item.data,
@@ -108,9 +115,12 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                             body: item.body,
                           );
                     if (_selectedFilter == 'all') return true;
+                    if (_selectedFilter == 'student_leave') return resolvedType == 'student_leave';
+                    if (_selectedFilter == 'teacher_leave') return resolvedType == 'teacher_leave';
                     if (_selectedFilter == 'callback') return resolvedType == 'callback';
                     if (_selectedFilter == 'gate_pass') return resolvedType == 'gate_pass';
                     if (_selectedFilter == 'visitor') return resolvedType == 'visitor';
+                    if (_selectedFilter == 'admission') return resolvedType == 'admission';
                     return true;
                   }).toList();
 
@@ -142,7 +152,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Incoming push notifications for Callback, Gate Pass, and Visitors will appear here.',
+                              'Incoming push notifications for Callbacks, Student & Teacher Leaves, Gate Pass, Visitors, and Admission will appear here.',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
@@ -156,7 +166,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                   }
 
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     itemCount: filteredList.length,
                     itemBuilder: (context, index) {
                       final item = filteredList[index];
@@ -175,14 +185,17 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
   Widget _buildFilterTabs() {
     final tabs = [
       {'id': 'all', 'label': 'All'},
-      {'id': 'callback', 'label': 'Callbacks'},
+      {'id': 'student_leave', 'label': 'Student Leave'},
+      {'id': 'teacher_leave', 'label': 'Teacher Leave'},
+      {'id': 'callback', 'label': 'Call Backs'},
       {'id': 'gate_pass', 'label': 'Gate Pass'},
       {'id': 'visitor', 'label': 'Visitors'},
+      {'id': 'admission', 'label': 'Admission'},
     ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         children: tabs.map((tab) {
           final id = tab['id']!;
@@ -228,7 +241,10 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
   Widget _buildNotificationCard(AppNotificationItem item) {
     final resolvedType = (item.type == 'gate_pass' ||
             item.type == 'visitor' ||
-            item.type == 'callback')
+            item.type == 'callback' ||
+            item.type == 'student_leave' ||
+            item.type == 'teacher_leave' ||
+            item.type == 'admission')
         ? item.type
         : detectNotificationCategory(
             data: item.data,
@@ -242,6 +258,24 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
     String categoryLabel;
 
     switch (resolvedType) {
+      case 'student_leave':
+        icon = Icons.event_note_rounded;
+        iconColor = const Color(0xFFE11D48);
+        iconBg = const Color(0xFFFFE4E6);
+        categoryLabel = 'STUDENT LEAVE';
+        break;
+      case 'teacher_leave':
+        icon = Icons.assignment_ind_rounded;
+        iconColor = const Color(0xFF0284C7);
+        iconBg = const Color(0xFFE0F2FE);
+        categoryLabel = 'TEACHER LEAVE';
+        break;
+      case 'admission':
+        icon = Icons.school_rounded;
+        iconColor = const Color(0xFF4F46E5);
+        iconBg = const Color(0xFFEEF2FF);
+        categoryLabel = 'ADMISSION';
+        break;
       case 'gate_pass':
         icon = Icons.badge_outlined;
         iconColor = const Color(0xFF0D9488);
@@ -272,7 +306,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: item.isRead ? Colors.white : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: item.isRead ? const Color(0xFFE2E8F0) : iconColor.withValues(alpha: 0.3),
           width: item.isRead ? 1 : 1.5,
@@ -285,17 +319,9 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            _historyController.markAsRead(item.id);
-            _navigateToTarget(item);
-          },
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
@@ -379,33 +405,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  void _navigateToTarget(AppNotificationItem item) {
-    _historyController.markAsRead(item.id);
-    final data = item.data;
-
-    if (item.type == 'gate_pass') {
-      UnreadCounterController.to.clearGatePass();
-      Get.to(() => const GetPassScreen());
-    } else if (item.type == 'visitor') {
-      UnreadCounterController.to.clearVisitor();
-      Get.to(() => const VisitorsScreen());
-    } else if (item.type == 'callback') {
-      UnreadCounterController.to.clearCallback();
-      final callbackIdStr = data?['callback_id'] ?? data?['id'];
-      if (callbackIdStr != null && int.tryParse(callbackIdStr.toString()) != null) {
-        final callbackId = int.parse(callbackIdStr.toString());
-        Get.to(() => CallbackDetailScreen(callbackId: callbackId));
-      } else {
-        Get.to(() => const CallBackScreen());
-      }
-    } else {
-      Get.to(() => const CallBackScreen());
-    }
+        );
   }
 
   String _formatTimeAgo(DateTime dt) {

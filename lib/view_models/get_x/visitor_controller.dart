@@ -11,6 +11,7 @@ class VisitorController extends GetxController {
   var errorMessage = ''.obs;
 
   var visitorList = <VisitorItem>[].obs;
+  var selectedStatus = 'pending'.obs; // 'pending', 'approved', 'rejected', 'all'
   var searchQuery = ''.obs;
   var selectedDate = ''.obs;
   Timer? _syncTimer;
@@ -66,23 +67,50 @@ class VisitorController extends GetxController {
     }
   }
 
+  void filterByStatus(String status) {
+    selectedStatus.value = status;
+  }
+
   List<VisitorItem> get filteredVisitors {
     final query = searchQuery.value.trim().toLowerCase();
-    if (query.isEmpty) {
-      return visitorList;
-    }
+    final statusFilter = selectedStatus.value.trim().toLowerCase();
+
     return visitorList.where((item) {
+      // 1. Status Filter
+      bool matchesStatus = true;
+      if (statusFilter != 'all') {
+        final type = (item.visitorType ?? '').toLowerCase();
+        final purpose = (item.purposeOfVisit ?? '').toLowerCase();
+        if (statusFilter == 'pending') {
+          // If no explicit status or matches pending/in-progress
+          matchesStatus = type.contains('pending') || type.isEmpty || !type.contains('reject');
+        } else if (statusFilter == 'approved') {
+          matchesStatus = type.contains('approve') || type.contains('verified') || (item.isLocationVerified == true);
+        } else if (statusFilter == 'rejected') {
+          matchesStatus = type.contains('reject');
+        } else {
+          matchesStatus = type.contains(statusFilter) || purpose.contains(statusFilter);
+        }
+      }
+
+      // 2. Search Query
+      if (query.isEmpty) {
+        return matchesStatus;
+      }
+
       final name = item.name?.toLowerCase() ?? '';
       final mobile = item.mobileNo?.toLowerCase() ?? '';
       final type = item.visitorType?.toLowerCase() ?? '';
       final purpose = item.purposeOfVisit?.toLowerCase() ?? '';
       final createdBy = item.createdBy?.toLowerCase() ?? '';
 
-      return name.contains(query) ||
+      final matchesQuery = name.contains(query) ||
           mobile.contains(query) ||
           type.contains(query) ||
           purpose.contains(query) ||
           createdBy.contains(query);
+
+      return matchesStatus && matchesQuery;
     }).toList();
   }
 

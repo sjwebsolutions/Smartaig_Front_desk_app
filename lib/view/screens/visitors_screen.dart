@@ -9,7 +9,8 @@ import '../../view_models/get_x/unread_counter_controller.dart';
 import '../../view_models/get_x/visitor_controller.dart';
 
 class VisitorsScreen extends StatefulWidget {
-  const VisitorsScreen({super.key});
+  final bool showBackButton;
+  const VisitorsScreen({super.key, this.showBackButton = false});
 
   @override
   State<VisitorsScreen> createState() => _VisitorsScreenState();
@@ -54,14 +55,25 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
               // TOP APP BAR
               // -------------------------------------------------
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Row(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 22),
-                      onPressed: () => Get.back(),
-                      tooltip: 'Back',
-                    ),
+                    if (widget.showBackButton && Navigator.canPop(context)) ...[
+                      IconButton(
+                        constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 18),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shape: const CircleBorder(),
+                          elevation: 2,
+                          shadowColor: Colors.black12,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () => Get.back(),
+                        tooltip: 'Back',
+                      ),
+                    ],
                     Expanded(
                       child: Center(
                         child: Text(
@@ -76,7 +88,8 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 48), // Balance spacing
+                    if (widget.showBackButton && Navigator.canPop(context))
+                      const SizedBox(width: 30), // Balance spacing
                   ],
                 ),
               ),
@@ -85,7 +98,7 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
               // SEARCH BAR
               // -------------------------------------------------
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -126,6 +139,11 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
                   ),
                 ),
               ),
+
+              // -------------------------------------------------
+              // STATUS FILTER CHIPS
+              // -------------------------------------------------
+              Obx(() => _buildStatusFilterTabs()),
 
               const SizedBox(height: 8),
 
@@ -246,7 +264,7 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
                     color: const Color(0xFF2563EB),
                     onRefresh: () => _controller.fetchVisitors(isRefresh: true),
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.only(left: 12, right: 12, top: 6, bottom: 90),
                       itemCount: list.length,
                       itemBuilder: (context, index) {
                         final item = list[index];
@@ -259,6 +277,61 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------
+  // STATUS FILTER CHIPS
+  // -------------------------------------------------
+  Widget _buildStatusFilterTabs() {
+    final selected = _controller.selectedStatus.value;
+
+    final tabs = [
+      {'id': 'pending', 'label': 'Pending', 'color': const Color(0xFFD97706)},
+      {'id': 'approved', 'label': 'Approved', 'color': const Color(0xFF059669)},
+      {'id': 'rejected', 'label': 'Rejected', 'color': const Color(0xFFDC2626)},
+      {'id': 'all', 'label': 'All', 'color': const Color(0xFF2563EB)},
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        children: tabs.map((tab) {
+          final id = tab['id'] as String;
+          final label = tab['label'] as String;
+          final color = tab['color'] as Color;
+          final isSelected = selected == id;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              selected: isSelected,
+              showCheckmark: false,
+              label: Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? Colors.white : const Color(0xFF334155),
+                ),
+              ),
+              selectedColor: color,
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isSelected ? color : Colors.white,
+                  width: 1,
+                ),
+              ),
+              elevation: isSelected ? 2 : 0,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              onSelected: (_) => _controller.filterByStatus(id),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

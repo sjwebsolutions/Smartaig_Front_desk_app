@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,7 +7,20 @@ import '../view/screens/auth/login_screen.dart';
 
 class TokenManager {
   static const String _tokenKey = 'auth_token';
+  static const String _deviceUuidKey = 'device_unique_uuid';
   static bool _isLoggingOut = false;
+
+  static Future<String> getDeviceUuid() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? uuid = prefs.getString(_deviceUuidKey);
+    if (uuid == null || uuid.trim().isEmpty) {
+      final random = Random();
+      uuid = 'device_${DateTime.now().millisecondsSinceEpoch}_${random.nextInt(999999)}';
+      await prefs.setString(_deviceUuidKey, uuid);
+      debugPrint('📱 [TokenManager] New unique device UUID generated: $uuid');
+    }
+    return uuid;
+  }
 
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -42,12 +56,15 @@ class TokenManager {
   static Future<Map<String, String>> getAuthHeaders() async {
     final token = await getToken();
     final fcmToken = await NotificationService.instance.getDeviceToken();
+    final deviceUuid = await getDeviceUuid();
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
       if (fcmToken != null && fcmToken.isNotEmpty) 'X-FCM-Token': fcmToken,
       if (fcmToken != null && fcmToken.isNotEmpty) 'Device-Token': fcmToken,
+      'X-Device-UUID': deviceUuid,
+      'Device-UUID': deviceUuid,
     };
   }
 
@@ -61,7 +78,7 @@ class TokenManager {
       return;
     }
 
-    debugPrint('⚠️ [TokenManager] Unauthorized 401 detected (Logged in on another device). Logging out...');
+    debugPrint('⚠️ [TokenManager] Unauthorized 401 detected. Logging out...');
     await removeToken();
 
     Get.offAll(() => const LoginScreen(sessionExpired: true));

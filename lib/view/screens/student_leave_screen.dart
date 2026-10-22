@@ -47,11 +47,20 @@ class _StudentLeaveScreenState extends State<StudentLeaveScreen> {
               // TOP APP BAR
               // -------------------------------------------------
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 22),
+                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 18),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: const CircleBorder(),
+                        elevation: 2,
+                        shadowColor: Colors.black12,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       onPressed: () => Get.back(),
                       tooltip: 'Back',
                     ),
@@ -195,7 +204,7 @@ class _StudentLeaveScreenState extends State<StudentLeaveScreen> {
                     color: const Color(0xFFE11D48),
                     onRefresh: () async => _controller.fetchStudentLeaves(isManualRefresh: true),
                     child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(14, 2, 14, 20),
+                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 20),
                       itemCount: list.length,
                       itemBuilder: (context, index) {
                         return _buildStudentLeaveCard(list[index]);
@@ -213,29 +222,21 @@ class _StudentLeaveScreenState extends State<StudentLeaveScreen> {
 
   Widget _buildSummaryCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Row(
         children: [
-          _buildStatItem(
-            label: 'Total',
-            count: _controller.totalCount,
-            color: const Color(0xFF2563EB),
-            bgColor: const Color(0xFFEFF6FF),
-            icon: Icons.assignment_rounded,
-          ),
-          _buildStatDivider(),
           _buildStatItem(
             label: 'Pending',
             count: _controller.pendingCount,
@@ -259,6 +260,14 @@ class _StudentLeaveScreenState extends State<StudentLeaveScreen> {
             bgColor: const Color(0xFFFEF2F2),
             icon: Icons.cancel_rounded,
           ),
+          _buildStatDivider(),
+          _buildStatItem(
+            label: 'Total',
+            count: _controller.totalCount,
+            color: const Color(0xFF2563EB),
+            bgColor: const Color(0xFFEFF6FF),
+            icon: Icons.assignment_rounded,
+          ),
         ],
       ),
     );
@@ -279,30 +288,30 @@ class _StudentLeaveScreenState extends State<StudentLeaveScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(3.5),
+                padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   color: bgColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 12, color: color),
+                child: Icon(icon, size: 14, color: color),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 5),
               Text(
                 '$count',
                 style: GoogleFonts.poppins(
-                  fontSize: 15,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF0F172A),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             label,
             style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
               color: const Color(0xFF64748B),
             ),
             maxLines: 1,
@@ -325,13 +334,6 @@ class _StudentLeaveScreenState extends State<StudentLeaveScreen> {
   Widget _buildStatusFilterTabs() {
     final filters = [
       {
-        'label': 'All',
-        'key': 'all',
-        'count': _controller.totalCount,
-        'color': const Color(0xFF2563EB),
-        'bgColor': const Color(0xFFEFF6FF),
-      },
-      {
         'label': 'Pending',
         'key': 'pending',
         'count': _controller.pendingCount,
@@ -351,6 +353,13 @@ class _StudentLeaveScreenState extends State<StudentLeaveScreen> {
         'count': _controller.rejectedCount,
         'color': const Color(0xFFDC2626),
         'bgColor': const Color(0xFFFEF2F2),
+      },
+      {
+        'label': 'All',
+        'key': 'all',
+        'count': _controller.totalCount,
+        'color': const Color(0xFF2563EB),
+        'bgColor': const Color(0xFFEFF6FF),
       },
     ];
 

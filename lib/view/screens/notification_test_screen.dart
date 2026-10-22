@@ -121,8 +121,17 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                 child: Row(
                   children: [
                     IconButton(
+                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                      padding: EdgeInsets.zero,
                       icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Color(0xFF2C3E50), size: 22),
+                          color: Color(0xFF2C3E50), size: 18),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: const CircleBorder(),
+                        elevation: 2,
+                        shadowColor: Colors.black12,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       onPressed: () => Get.back(),
                       tooltip: 'Back',
                     ),

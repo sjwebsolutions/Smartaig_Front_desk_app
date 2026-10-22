@@ -14,7 +14,7 @@ class GatePassController extends GetxController {
   var errorMessage = ''.obs;
 
   var gatePassList = <GatePassItem>[].obs;
-  var selectedStatus = 'all'.obs; // 'all', 'pending', 'approved', 'rejected'
+  var selectedStatus = 'pending'.obs; // 'pending', 'approved', 'rejected', 'all'
   var searchQuery = ''.obs;
   Timer? _syncTimer;
 

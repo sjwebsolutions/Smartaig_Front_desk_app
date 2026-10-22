@@ -48,11 +48,20 @@ class _CallBackScreenState extends State<CallBackScreen> {
               // TOP APP BAR
               // -------------------------------------------------
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 22),
+                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF2C3E50), size: 18),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: const CircleBorder(),
+                        elevation: 2,
+                        shadowColor: Colors.black12,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       onPressed: () => Get.back(),
                       tooltip: 'Back',
                     ),
@@ -74,6 +83,13 @@ class _CallBackScreenState extends State<CallBackScreen> {
                   ],
                 ),
               ),
+
+              // -------------------------------------------------
+              // TOP STATS CARD SUMMARY
+              // -------------------------------------------------
+              Obx(() => _buildSummaryCard()),
+
+              const SizedBox(height: 6),
 
               // -------------------------------------------------
               // STATUS COUNTS & FILTER TABS
@@ -197,7 +213,7 @@ class _CallBackScreenState extends State<CallBackScreen> {
                     color: const Color(0xFF4E54C8),
                     onRefresh: () => _controller.fetchCallbacks(isRefresh: true),
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       itemCount: _controller.callbackList.length,
                       itemBuilder: (context, index) {
                         final item = _controller.callbackList[index];
@@ -214,28 +230,138 @@ class _CallBackScreenState extends State<CallBackScreen> {
     );
   }
 
+  Widget _buildSummaryCard() {
+    final counts = _controller.counts.value;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildStatItem(
+            label: 'Pending',
+            count: counts.pending,
+            color: const Color(0xFFD97706),
+            bgColor: const Color(0xFFFFFBEB),
+            icon: Icons.hourglass_top_rounded,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            label: 'In Progress',
+            count: counts.inProgress,
+            color: const Color(0xFF2563EB),
+            bgColor: const Color(0xFFEFF6FF),
+            icon: Icons.sync_rounded,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            label: 'Completed',
+            count: counts.completedToday,
+            color: const Color(0xFF059669),
+            bgColor: const Color(0xFFECFDF5),
+            icon: Icons.check_circle_rounded,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            label: 'Total',
+            count: counts.all,
+            color: const Color(0xFF4E54C8),
+            bgColor: const Color(0xFFEEF2FF),
+            icon: Icons.phone_callback_rounded,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required String label,
+    required int count,
+    required Color color,
+    required Color bgColor,
+    required IconData icon,
+  }) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 14, color: color),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                '$count',
+                style: GoogleFonts.poppins(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF64748B),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      height: 24,
+      width: 1,
+      color: const Color(0xFFE2E8F0),
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+    );
+  }
+
   // -------------------------------------------------
-  // STATUS FILTER CHIPS WITH COUNTS
+  // STATUS FILTER CHIPS
   // -------------------------------------------------
   Widget _buildStatusFilterTabs() {
-    final counts = _controller.counts.value;
     final selected = _controller.selectedStatus.value;
 
     final tabs = [
-      {'id': 'all', 'label': 'All', 'count': counts.all, 'color': const Color(0xFF4E54C8)},
-      {'id': 'pending', 'label': 'Pending', 'count': counts.pending, 'color': const Color(0xFFD97706)},
-      {'id': 'in_progress', 'label': 'In Progress', 'count': counts.inProgress, 'color': const Color(0xFF2563EB)},
-      {'id': 'completed', 'label': 'Completed', 'count': counts.completedToday, 'color': const Color(0xFF059669)},
+      {'id': 'pending', 'label': 'Pending', 'color': const Color(0xFFD97706)},
+      {'id': 'in_progress', 'label': 'In Progress', 'color': const Color(0xFF2563EB)},
+      {'id': 'completed', 'label': 'Completed', 'color': const Color(0xFF059669)},
+      {'id': 'all', 'label': 'All', 'color': const Color(0xFF4E54C8)},
     ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         children: tabs.map((tab) {
           final id = tab['id'] as String;
           final label = tab['label'] as String;
-          final count = tab['count'] as int;
           final color = tab['color'] as Color;
           final isSelected = selected == id;
 
@@ -244,34 +370,13 @@ class _CallBackScreenState extends State<CallBackScreen> {
             child: FilterChip(
               selected: isSelected,
               showCheckmark: false,
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? Colors.white : const Color(0xFF334155),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: isSelected ? Colors.white.withValues(alpha: 0.25) : color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '$count',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.white : color,
-                      ),
-                    ),
-                  ),
-                ],
+              label: Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? Colors.white : const Color(0xFF334155),
+                ),
               ),
               selectedColor: color,
               backgroundColor: Colors.white,
@@ -283,7 +388,7 @@ class _CallBackScreenState extends State<CallBackScreen> {
                 ),
               ),
               elevation: isSelected ? 2 : 0,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               onSelected: (_) => _controller.filterByStatus(id),
             ),
           );

@@ -6,14 +6,18 @@ class InfinityLoader extends StatefulWidget {
   final String text;
   final double width;
   final double height;
-  final Color glowColor;
+  final Color primaryColor;
+  final Color secondaryColor;
+  final Color textColor;
 
   const InfinityLoader({
     super.key,
     this.text = 'Loading...',
     this.width = 120,
     this.height = 60,
-    this.glowColor = const Color(0xFF8B5CF6),
+    this.primaryColor = const Color(0xFF4F46E5), // Vibrant Electric Indigo
+    this.secondaryColor = const Color(0xFF0284C7), // Vibrant Cyan Blue
+    this.textColor = const Color(0xFF2C3E50),
   });
 
   @override
@@ -41,66 +45,46 @@ class _InfinityLoaderState extends State<InfinityLoader>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 28),
-      decoration: BoxDecoration(
-        color: const Color(0xFF090714),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: widget.glowColor.withValues(alpha: 0.25),
-          width: 1,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return CustomPaint(
+              size: Size(widget.width, widget.height),
+              painter: _InfinityPainter(
+                progress: _controller.value,
+                primaryColor: widget.primaryColor,
+                secondaryColor: widget.secondaryColor,
+              ),
+            );
+          },
         ),
-        boxShadow: [
-          BoxShadow(
-            color: widget.glowColor.withValues(alpha: 0.2),
-            blurRadius: 25,
-            spreadRadius: 2,
+        const SizedBox(height: 16),
+        Text(
+          widget.text,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: widget.textColor,
+            letterSpacing: 1.5,
           ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return CustomPaint(
-                size: Size(widget.width, widget.height),
-                painter: _InfinityPainter(
-                  progress: _controller.value,
-                  glowColor: widget.glowColor,
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 18),
-          Text(
-            widget.text,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFFCBD5E1),
-              letterSpacing: 1.5,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
 class _InfinityPainter extends CustomPainter {
   final double progress;
-  final Color glowColor;
+  final Color primaryColor;
+  final Color secondaryColor;
 
   _InfinityPainter({
     required this.progress,
-    required this.glowColor,
+    required this.primaryColor,
+    required this.secondaryColor,
   });
 
   @override
@@ -110,12 +94,6 @@ class _InfinityPainter extends CustomPainter {
     final scaleY = (size.height / 2) * 0.85;
 
     // 1. Draw Background Track
-    final trackPaint = Paint()
-      ..color = glowColor.withValues(alpha: 0.18)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round;
-
     final trackPath = Path();
     const steps = 120;
     for (int i = 0; i <= steps; i++) {
@@ -127,9 +105,16 @@ class _InfinityPainter extends CustomPainter {
         trackPath.lineTo(point.dx, point.dy);
       }
     }
+
+    final trackPaint = Paint()
+      ..color = primaryColor.withValues(alpha: 0.15)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+
     canvas.drawPath(trackPath, trackPaint);
 
-    // 2. Draw Animated Glowing Trail
+    // 2. Draw Animated Glowing Gradient Trail
     final headT = progress * 2 * math.pi;
     const trailSteps = 50;
     const trailSpan = math.pi * 1.1; // Length of glowing tail
@@ -144,9 +129,13 @@ class _InfinityPainter extends CustomPainter {
 
       if (alpha <= 0.01) continue;
 
+      // Smooth color transition along the loop (Indigo -> Cyan)
+      final normalizedT = (t % (2 * math.pi)) / (2 * math.pi);
+      final currentColor = Color.lerp(primaryColor, secondaryColor, (math.sin(normalizedT * math.pi * 2) + 1) / 2)!;
+
       // Outer Glow Aura
       final auraPaint = Paint()
-        ..color = glowColor.withValues(alpha: 0.45 * alpha)
+        ..color = currentColor.withValues(alpha: 0.5 * alpha)
         ..style = PaintingStyle.fill
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6.0 * alpha + 1.0);
 
@@ -154,7 +143,7 @@ class _InfinityPainter extends CustomPainter {
 
       // Core Light
       final corePaint = Paint()
-        ..color = Color.lerp(glowColor, Colors.white, fade * 0.8)!.withValues(alpha: alpha)
+        ..color = Color.lerp(currentColor, Colors.white, fade * 0.7)!.withValues(alpha: alpha)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(point, 2.2 * alpha + 0.5, corePaint);
@@ -164,11 +153,11 @@ class _InfinityPainter extends CustomPainter {
     final headPoint = _getLemniscatePoint(headT, center, scaleX, scaleY);
 
     final headGlowPaint = Paint()
-      ..color = Colors.white
+      ..color = primaryColor
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8.0);
 
-    canvas.drawCircle(headPoint, 7.5, headGlowPaint);
+    canvas.drawCircle(headPoint, 8.0, headGlowPaint);
 
     final headCenterPaint = Paint()
       ..color = Colors.white
@@ -186,6 +175,8 @@ class _InfinityPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _InfinityPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.glowColor != glowColor;
+    return oldDelegate.progress != progress ||
+        oldDelegate.primaryColor != primaryColor ||
+        oldDelegate.secondaryColor != secondaryColor;
   }
 }

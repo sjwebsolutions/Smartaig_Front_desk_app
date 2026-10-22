@@ -11,7 +11,7 @@ class StudentLeaveController extends GetxController {
   var isActionLoading = false.obs;
   var errorMessage = ''.obs;
 
-  var selectedStatusFilter = 'all'.obs; // all, pending, approved, rejected
+  var selectedStatusFilter = 'pending'.obs; // pending, approved, rejected, all
   var selectedClassId = ''.obs;
   var selectedSectionId = ''.obs;
   var selectedStreamId = ''.obs;

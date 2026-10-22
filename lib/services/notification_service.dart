@@ -7,14 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../view/screens/admission_detail_screen.dart';
-import '../view/screens/admission_screen.dart';
-import '../view/screens/call_back_screen.dart';
-import '../view/screens/callback_detail_screen.dart';
-import '../view/screens/get_pass_screen.dart';
-import '../view/screens/student_leave_screen.dart';
-import '../view/screens/teacher_leave_screen.dart';
-import '../view/screens/visitors_screen.dart';
+import '../view/screens/notification_list_screen.dart';
 import '../view_models/get_x/admission_controller.dart';
 import '../view_models/get_x/callback_controller.dart';
 import '../view_models/get_x/dashboard_controller.dart';
@@ -306,7 +299,20 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
           FlutterLocalNotificationsPlugin();
 
       const androidInit = AndroidInitializationSettings('@mipmap/launcher_icon');
-      const initSettings = InitializationSettings(android: androidInit);
+      const iosInit = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+        defaultPresentAlert: true,
+        defaultPresentSound: true,
+        defaultPresentBadge: true,
+        defaultPresentBanner: true,
+        defaultPresentList: true,
+      );
+      const initSettings = InitializationSettings(
+        android: androidInit,
+        iOS: iosInit,
+      );
       await localNotifications.initialize(initSettings);
 
       final categoryColor = categoryType == 'admission'
@@ -349,7 +355,19 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         ),
       );
 
-      final platformDetails = NotificationDetails(android: androidDetails);
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        presentBanner: true,
+        presentList: true,
+        interruptionLevel: InterruptionLevel.active,
+      );
+
+      final platformDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
       final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
       await localNotifications.show(
@@ -423,9 +441,9 @@ class NotificationService {
       // 5. Setup Foreground Presentation Options (iOS)
       try {
         await _fcm.setForegroundNotificationPresentationOptions(
-          alert: false, // Flutter local notifications handles foreground banner
+          alert: true,
           badge: true,
-          sound: false, // Flutter local notifications handles foreground sound
+          sound: true,
         );
       } catch (e) {
         debugPrint('⚠️ Error setting foreground notification options: $e');
@@ -560,7 +578,9 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'default',
+      presentBanner: true,
+      presentList: true,
+      interruptionLevel: InterruptionLevel.active,
     );
 
     final platformDetails = NotificationDetails(
@@ -624,7 +644,9 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'default',
+      presentBanner: true,
+      presentList: true,
+      interruptionLevel: InterruptionLevel.active,
     );
 
     final platformDetails = NotificationDetails(
@@ -688,7 +710,9 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'default',
+      presentBanner: true,
+      presentList: true,
+      interruptionLevel: InterruptionLevel.active,
     );
 
     final platformDetails = NotificationDetails(
@@ -752,7 +776,9 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'default',
+      presentBanner: true,
+      presentList: true,
+      interruptionLevel: InterruptionLevel.active,
     );
 
     final platformDetails = NotificationDetails(
@@ -816,7 +842,9 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'default',
+      presentBanner: true,
+      presentList: true,
+      interruptionLevel: InterruptionLevel.active,
     );
 
     final platformDetails = NotificationDetails(
@@ -880,7 +908,9 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'default',
+      presentBanner: true,
+      presentList: true,
+      interruptionLevel: InterruptionLevel.active,
     );
 
     final platformDetails = NotificationDetails(
@@ -1041,7 +1071,9 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'default',
+      presentBanner: true,
+      presentList: true,
+      interruptionLevel: InterruptionLevel.active,
     );
 
     final platformDetails = NotificationDetails(
@@ -1102,6 +1134,11 @@ class NotificationService {
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
+      defaultPresentAlert: true,
+      defaultPresentSound: true,
+      defaultPresentBadge: true,
+      defaultPresentBanner: true,
+      defaultPresentList: true,
     );
 
     const initSettings = InitializationSettings(
@@ -1310,7 +1347,9 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'default',
+      presentBanner: true,
+      presentList: true,
+      interruptionLevel: InterruptionLevel.active,
     );
 
     final platformDetails = NotificationDetails(
@@ -1351,16 +1390,27 @@ class NotificationService {
     });
   }
 
-  /// Handle Notification Click - Click navigation disabled per user request
+  /// Handle Notification Click - Navigates to NotificationListScreen
   void _handleNotificationClick(RemoteMessage message) {
-    debugPrint('🔔 [Notification Click Disabled]: User tapped notification. Data: ${message.data}');
-    // Do nothing on notification click
+    debugPrint('🔔 [Notification Click]: User tapped notification. Data: ${message.data}');
+    _navigateToNotificationScreen();
   }
 
-  /// Handle local notification banner tap - Navigation disabled per user request
+  /// Handle local notification banner tap - Navigates to NotificationListScreen
   void _handleLocalNotificationTap(String? payload) {
-    debugPrint('👆 [Local Notification Click Disabled]: User tapped banner. Payload: $payload');
-    // Do nothing on notification banner tap
+    debugPrint('👆 [Local Notification Click]: User tapped banner. Payload: $payload');
+    _navigateToNotificationScreen();
+  }
+
+  void _navigateToNotificationScreen() {
+    Future.delayed(const Duration(milliseconds: 300), () {
+      try {
+        NotificationHistoryController.to.markAllAsRead();
+        Get.to(() => const NotificationListScreen());
+      } catch (e) {
+        debugPrint('⚠️ Error navigating to NotificationListScreen: $e');
+      }
+    });
   }
 
   /// Fetch device FCM Token

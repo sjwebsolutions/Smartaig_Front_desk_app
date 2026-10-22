@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../utils/token_manager.dart';
 import '../../../view_models/get_x/auth_controller.dart';
 import 'login_screen.dart';
-import '../dashboard.dart';
+import '../main_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -46,11 +46,11 @@ class _SplashScreenState extends State<SplashScreen>
   void _setupAnimation() {
     _containerController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 1800),
     );
 
     _containerSlide = Tween<Offset>(
-      begin: const Offset(0, 0.2),
+      begin: const Offset(0.0, 1.3),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
@@ -76,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen>
           authController.token.value = token;
 
           Get.offAll(
-            () => const FrontDeskDashboard(),
+            () => const MainScreen(),
             transition: Transition.fadeIn,
             duration: const Duration(milliseconds: 500),
           );
@@ -105,6 +105,12 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double scaleFactor = (screenWidth / 390).clamp(0.85, 1.5);
+    final double logoSize = (200 * scaleFactor).clamp(140.0, 280.0);
+    final double titleFontSize = 22 * scaleFactor;
+    final double subtitleFontSize = 13 * scaleFactor;
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -136,14 +142,14 @@ class _SplashScreenState extends State<SplashScreen>
                         children: [
                           Image.asset(
                             "assets/images/splash_logo.png",
-                            width: 200,
-                            height: 200,
+                            width: logoSize,
+                            height: logoSize,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
+                              return Icon(
                                 Icons.business_center_rounded,
-                                size: 100,
-                                color: Color(0xFF4E54C8),
+                                size: logoSize * 0.5,
+                                color: const Color(0xFF4E54C8),
                               );
                             },
                           ),
@@ -151,10 +157,9 @@ class _SplashScreenState extends State<SplashScreen>
                             'Smart AIG - Front Desk App',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
-                              fontSize: 22,
+                              fontSize: titleFontSize,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF2C3E50),
-                              letterSpacing: 1.0,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -162,10 +167,10 @@ class _SplashScreenState extends State<SplashScreen>
                             'Administrative Info Group',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
-                              fontSize: 13,
+                              fontSize: subtitleFontSize,
                               fontWeight: FontWeight.w500,
                               color: const Color(0xFF64748B),
-                              letterSpacing: 5.0,
+                              letterSpacing: (5.0 * scaleFactor).clamp(2.0, 7.0),
                             ),
                           ),
                         ],
