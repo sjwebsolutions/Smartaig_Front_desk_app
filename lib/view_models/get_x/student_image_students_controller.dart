@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import '../../models/student_image_store_model.dart';
 import '../../models/student_image_students_model.dart';
 import '../../services/student_image_students_service.dart';
 import '../../utils/app_error_formatter.dart';
@@ -9,6 +10,7 @@ class StudentImageStudentsController extends GetxController {
   final StudentImageStudentsService _service = StudentImageStudentsService();
 
   var isLoading = false.obs;
+  var isSubmitting = false.obs;
   var errorMessage = ''.obs;
   var studentsList = <StudentImageStudentItem>[].obs;
   var totalCount = 0.obs;
@@ -55,6 +57,60 @@ class StudentImageStudentsController extends GetxController {
       }
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<StudentImageStoreResponseModel?> submitStudentImageRequest({
+    required dynamic studentId,
+    dynamic profileImageFile,
+    dynamic fatherImageFile,
+    dynamic motherImageFile,
+  }) async {
+    if (studentId == null) {
+      AppSnackbar.showError(title: 'Required Field', message: 'Student ID is required.');
+      return null;
+    }
+
+    if (profileImageFile == null && fatherImageFile == null && motherImageFile == null) {
+      AppSnackbar.showError(title: 'Required Field', message: 'Please select at least one photo (Profile, Father, or Mother).');
+      return null;
+    }
+
+    isSubmitting.value = true;
+    errorMessage.value = '';
+
+    try {
+      debugPrint('🚀 [StudentImageStudentsController] Submitting image request for studentId=$studentId');
+      final response = await _service.submitStudentImageRequest(
+        studentId: studentId,
+        profileImageFile: profileImageFile,
+        fatherImageFile: fatherImageFile,
+        motherImageFile: motherImageFile,
+      );
+
+      if (response.success == true || response.data != null) {
+        AppSnackbar.showSuccess(
+          title: 'Request Submitted',
+          message: response.message ?? 'Student photograph update request submitted successfully.',
+        );
+        return response;
+      } else {
+        AppSnackbar.showError(
+          title: 'Submission Failed',
+          message: response.message ?? 'Failed to submit request.',
+        );
+        return null;
+      }
+    } catch (e, stack) {
+      debugPrint('❌ [StudentImageStudentsController Submit Exception]: $e\n$stack');
+      final formattedError = AppErrorFormatter.format(e);
+      AppSnackbar.showError(
+        title: 'Submission Failed',
+        message: formattedError,
+      );
+      return null;
+    } finally {
+      isSubmitting.value = false;
     }
   }
 

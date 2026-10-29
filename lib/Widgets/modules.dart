@@ -7,6 +7,7 @@ import '../view/screens/call_back_screen.dart';
 import '../view/screens/get_pass_screen.dart';
 import '../view/screens/qr_attendance_scanner_screen.dart';
 import '../view/screens/student_count_screen.dart';
+import '../view/screens/student_image_classes_screen.dart';
 import '../view/screens/student_leave_screen.dart';
 import '../view/screens/teacher_leave_screen.dart';
 import '../view/screens/transport_screen.dart';
@@ -101,6 +102,17 @@ class DashboardModulesWidget extends StatelessWidget {
           screen: const TeacherLeaveScreen(),
           badgeCount: teacherLeavePending > 0 ? teacherLeavePending : unread.teacherLeaveCount.value,
           onClear: () => unread.clearTeacherLeave(),
+        ),
+        DashboardModuleItem(
+          title: 'Student Images',
+          icon: Icons.add_a_photo_rounded,
+          cardBg: const Color(0xFFFAF5FF),
+          cardBorder: const Color(0xFFE9D5FF),
+          iconBg: const Color(0xFFF3E8FF),
+          iconColor: const Color(0xFF9333EA),
+          screen: const StudentImageClassesScreen(),
+          badgeCount: 0,
+          onClear: () {},
         ),
       ];
 

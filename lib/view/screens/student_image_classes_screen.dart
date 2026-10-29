@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/student_image_classes_model.dart';
-import '../../utils/app_error_formatter.dart';
 import '../../view_models/get_x/student_image_classes_controller.dart';
 import 'student_image_student_list_screen.dart';
 
@@ -88,20 +87,7 @@ class _StudentImageClassesScreenState extends State<StudentImageClassesScreen> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.refresh_rounded, color: Color(0xFF4F46E5), size: 20),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        shape: const CircleBorder(),
-                        elevation: 2,
-                        shadowColor: Colors.black12,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      onPressed: () => _controller.fetchStudentImageClasses(isManualRefresh: true),
-                      tooltip: 'Refresh',
-                    ),
+                    const SizedBox(width: 32), // Balancing back button spacing
                   ],
                 ),
               ),
@@ -195,7 +181,7 @@ class _StudentImageClassesScreenState extends State<StudentImageClassesScreen> {
                               label: Text('Try Again', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF4F46E5),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                             ),
                           ],
@@ -246,7 +232,7 @@ class _StudentImageClassesScreenState extends State<StudentImageClassesScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -258,33 +244,33 @@ class _StudentImageClassesScreenState extends State<StudentImageClassesScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           onTap: () {
             Get.to(() => StudentImageStudentListScreen(selectedClass: item));
           },
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 46,
-                      height: 46,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         color: const Color(0xFFEEF2FF),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Center(
                         child: Icon(
                           Icons.school_rounded,
                           color: Color(0xFF4F46E5),
-                          size: 24,
+                          size: 22,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,7 +278,7 @@ class _StudentImageClassesScreenState extends State<StudentImageClassesScreen> {
                           Text(
                             item.className ?? '',
                             style: GoogleFonts.poppins(
-                              fontSize: 16,
+                              fontSize: 15.5,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF1E293B),
                             ),
@@ -303,22 +289,16 @@ class _StudentImageClassesScreenState extends State<StudentImageClassesScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.chevron_right_rounded,
-                        color: Color(0xFF4F46E5),
-                        size: 20,
-                      ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xFF4F46E5),
+                      size: 22,
                     ),
                   ],
                 ),
@@ -326,7 +306,7 @@ class _StudentImageClassesScreenState extends State<StudentImageClassesScreen> {
                 if (sections.isNotEmpty || streams.isNotEmpty) ...[
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 10),
-                    child: Divider(height: 1),
+                    child: Divider(height: 1, color: Color(0xFFF1F5F9)),
                   ),
 
                   // Sections & Streams Chips
@@ -400,6 +380,7 @@ class _StudentImageClassesScreenState extends State<StudentImageClassesScreen> {
             ),
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 }

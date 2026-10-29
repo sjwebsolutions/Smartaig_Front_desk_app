@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/student_image_students_model.dart';
 import '../../utils/app_snackbar.dart';
 import '../../view_models/get_x/student_image_students_controller.dart';
+import 'image_crop_screen.dart';
+import 'live_face_camera_screen.dart';
 
 class StudentImageSingleUploadScreen extends StatefulWidget {
   final StudentImageStudentItem student;
@@ -26,115 +29,235 @@ class _StudentImageSingleUploadScreenState extends State<StudentImageSingleUploa
   XFile? _fatherImage;
   XFile? _motherImage;
 
-  final ImagePicker _picker = ImagePicker();
-
   @override
   void initState() {
     super.initState();
-    _studentsController = Get.find<StudentImageStudentsController>();
+    _studentsController = Get.isRegistered<StudentImageStudentsController>()
+        ? Get.find<StudentImageStudentsController>()
+        : Get.put(StudentImageStudentsController());
+    _loadLocalPhotos();
   }
 
-  Future<void> _pickPhoto(String type) async {
+  Future<void> _loadLocalPhotos() async {
     try {
-      final picked = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
-      if (picked != null) {
+      final studentId = widget.student.id;
+      if (studentId == null) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      final profilePath = prefs.getString('local_photo_profile_$studentId');
+      final fatherPath = prefs.getString('local_photo_father_$studentId');
+      final motherPath = prefs.getString('local_photo_mother_$studentId');
+
+      if (mounted) {
         setState(() {
-          if (type == 'profile') _studentProfileImage = picked;
-          if (type == 'father') _fatherImage = picked;
-          if (type == 'mother') _motherImage = picked;
+          if (profilePath != null && File(profilePath).existsSync()) {
+            _studentProfileImage = XFile(profilePath);
+          }
+          if (fatherPath != null && File(fatherPath).existsSync()) {
+            _fatherImage = XFile(fatherPath);
+          }
+          if (motherPath != null && File(motherPath).existsSync()) {
+            _motherImage = XFile(motherPath);
+          }
         });
       }
-    } catch (_) {
-      AppSnackbar.showError(title: 'Image Error', message: 'Could not capture image from camera.');
-    }
+    } catch (_) {}
   }
 
-  void _onPhotoTileTap(String type, String label) {
-    final bool hasImage = (type == 'profile' && _studentProfileImage != null) ||
-        (type == 'father' && _fatherImage != null) ||
-        (type == 'mother' && _motherImage != null);
+  Future<void> _saveLocalPhoto(String type, String path) async {
+    try {
+      final studentId = widget.student.id;
+      if (studentId == null) return;
 
-    if (!hasImage) {
-      _pickPhoto(type);
-    } else {
-      _showImageActionModal(type, label);
-    }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('local_photo_${type}_$studentId', path);
+    } catch (_) {}
   }
 
-  void _showImageActionModal(String type, String label) {
+  void _showImageSourceOptions(String type, String title) {
     Get.bottomSheet(
       Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Drag Indicator
+              Container(
+                width: 38,
                 height: 4,
                 decoration: BoxDecoration(
                   color: Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Manage $label Photo',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1E293B),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(10),
+              const SizedBox(height: 16),
+              Text(
+                'Select $title',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E293B),
                 ),
-                child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF4F46E5), size: 22),
+                textAlign: TextAlign.center,
               ),
-              title: Text('Retake Photo (Camera)', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
-              onTap: () {
-                Get.back();
-                _pickPhoto(type);
-              },
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 22),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Camera Option Card
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        Get.back();
+                        _pickFromCamera(type, title);
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFC7D2FE)),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF4F46E5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_rounded,
+                                color: Colors.white,
+                                size: 26,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Camera',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1E293B),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Gallery Option Card
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        Get.back();
+                        _pickFromGallery(type, title);
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFBBF7D0)),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF16A34A),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.photo_library_rounded,
+                                color: Colors.white,
+                                size: 26,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Gallery',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1E293B),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              title: Text(
-                'Remove Photo',
-                style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500, color: const Color(0xFFEF4444)),
-              ),
-              onTap: () {
-                Get.back();
-                setState(() {
-                  if (type == 'profile') _studentProfileImage = null;
-                  if (type == 'father') _fatherImage = null;
-                  if (type == 'mother') _motherImage = null;
-                });
-              },
-            ),
-          ],
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _pickFromCamera(String type, String label) async {
+    try {
+      final XFile? confirmed = await Get.to(() => LiveFaceCameraScreen(title: label));
+
+      if (confirmed != null) {
+        await _updatePhoto(type, confirmed);
+      }
+    } catch (e) {
+      debugPrint('Camera error: $e');
+      AppSnackbar.showError(title: 'Camera Error', message: 'Could not open live camera view.');
+    }
+  }
+
+  Future<void> _pickFromGallery(String type, String title) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image != null) {
+        final XFile? cropped = await Get.to<XFile>(
+          () => ImageCropScreen(
+            imageFile: File(image.path),
+            title: 'Crop $title',
+          ),
+        );
+        if (cropped != null) {
+          await _updatePhoto(type, cropped);
+        }
+      }
+    } catch (e) {
+      debugPrint('Gallery error: $e');
+      AppSnackbar.showError(title: 'Gallery Error', message: 'Could not open gallery.');
+    }
+  }
+
+  Future<void> _updatePhoto(String type, XFile image) async {
+    setState(() {
+      if (type == 'profile') _studentProfileImage = image;
+      if (type == 'father') _fatherImage = image;
+      if (type == 'mother') _motherImage = image;
+    });
+    await _saveLocalPhoto(type, image.path);
   }
 
   Future<void> _handleSubmit() async {
@@ -147,6 +270,17 @@ class _StudentImageSingleUploadScreenState extends State<StudentImageSingleUploa
       return;
     }
 
+    // Save locally
+    if (_studentProfileImage != null) {
+      await _saveLocalPhoto('profile', _studentProfileImage!.path);
+    }
+    if (_fatherImage != null) {
+      await _saveLocalPhoto('father', _fatherImage!.path);
+    }
+    if (_motherImage != null) {
+      await _saveLocalPhoto('mother', _motherImage!.path);
+    }
+
     final res = await _studentsController.submitStudentImageRequest(
       studentId: widget.student.id!,
       profileImageFile: _studentProfileImage != null ? File(_studentProfileImage!.path) : null,
@@ -155,6 +289,10 @@ class _StudentImageSingleUploadScreenState extends State<StudentImageSingleUploa
     );
 
     if (res != null && res.success == true) {
+      AppSnackbar.showSuccess(
+        title: 'Success',
+        message: 'Student photo request submitted and saved locally.',
+      );
       Get.back(result: true);
     }
   }
@@ -165,105 +303,119 @@ class _StudentImageSingleUploadScreenState extends State<StudentImageSingleUploa
     required XFile? imageFile,
     required String? currentPhotoUrl,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF334155)),
+    final bool hasNewImage = imageFile != null;
+    final bool hasCurrentPhoto = currentPhotoUrl != null && currentPhotoUrl.isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: hasNewImage ? const Color(0xFF4F46E5) : Colors.grey.shade300,
+          width: hasNewImage ? 1.5 : 1.0,
         ),
-        const SizedBox(height: 6),
-        GestureDetector(
-          onTap: () => _onPhotoTileTap(type, title),
-          child: Container(
-            width: double.infinity,
-            height: 120,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: imageFile != null ? const Color(0xFF4F46E5) : Colors.grey.shade300,
-                width: imageFile != null ? 1.5 : 1.0,
+      ),
+      child: Row(
+        children: [
+          // Square Image Box on Left
+          GestureDetector(
+            onTap: () => _showImageSourceOptions(type, title),
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF2FF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: hasNewImage ? const Color(0xFF4F46E5) : Colors.grey.shade300,
+                  width: 1,
+                ),
               ),
-            ),
-            child: imageFile != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(11),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.file(File(imageFile.path), fit: BoxFit.cover),
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                              padding: EdgeInsets.zero,
-                              icon: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 16),
-                              onPressed: () => _onPhotoTileTap(type, title),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Row(
-                    children: [
-                      const SizedBox(width: 14),
-                      if (currentPhotoUrl != null && currentPhotoUrl.isNotEmpty)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(9),
+                child: hasNewImage
+                    ? Image.file(
+                        File(imageFile.path),
+                        fit: BoxFit.cover,
+                      )
+                    : hasCurrentPhoto
+                        ? Image.network(
                             currentPhotoUrl,
-                            width: 60,
-                            height: 60,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => Container(
-                              width: 60,
-                              height: 60,
                               color: Colors.grey.shade200,
-                              child: const Icon(Icons.person_rounded, color: Colors.grey),
+                              child: const Icon(Icons.person_rounded, color: Colors.grey, size: 24),
                             ),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.add_a_photo_rounded, size: 20, color: Color(0xFF4F46E5)),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Add Photo',
+                                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: const Color(0xFF4F46E5)),
+                              ),
+                            ],
                           ),
-                        )
-                      else
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEEF2FF),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.add_a_photo_rounded, size: 24, color: Color(0xFF4F46E5)),
-                        ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Tap to take photo (Camera)',
-                              style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF4F46E5)),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              currentPhotoUrl != null && currentPhotoUrl.isNotEmpty ? 'Current photo available' : 'Camera capture required',
-                              style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+
+          // Title & Status
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hasNewImage
+                      ? 'Saved locally'
+                      : (hasCurrentPhoto ? 'Current photo available' : 'Photo required'),
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: hasNewImage
+                        ? const Color(0xFF16A34A)
+                        : (hasCurrentPhoto ? const Color(0xFF4F46E5) : Colors.grey.shade600),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Action Button on Right
+          ElevatedButton.icon(
+            onPressed: () => _showImageSourceOptions(type, title),
+            icon: const Icon(Icons.add_a_photo_rounded, size: 14, color: Colors.white),
+            label: Text(
+              hasNewImage ? 'Change' : 'Select',
+              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4F46E5),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -333,121 +485,9 @@ class _StudentImageSingleUploadScreenState extends State<StudentImageSingleUploa
                   padding: const EdgeInsets.fromLTRB(14, 6, 14, 20),
                   child: Column(
                     children: [
-                      // STUDENT DETAILS HEADER CARD
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 28,
-                                  backgroundColor: const Color(0xFFEEF2FF),
-                                  backgroundImage: (currentPhotos?.studentPhotoUrl != null && currentPhotos!.studentPhotoUrl!.isNotEmpty)
-                                      ? NetworkImage(currentPhotos.studentPhotoUrl!)
-                                      : null,
-                                  child: (currentPhotos?.studentPhotoUrl == null || currentPhotos!.studentPhotoUrl!.isEmpty)
-                                      ? Text(
-                                          (student.studentName ?? 'S')[0].toUpperCase(),
-                                          style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF4F46E5)),
-                                        )
-                                      : null,
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        student.studentName ?? '',
-                                        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Class: ${student.className ?? ''} ${student.sectionName != null ? '(${student.sectionName})' : ''}',
-                                        style: GoogleFonts.poppins(fontSize: 12.5, color: const Color(0xFF4F46E5), fontWeight: FontWeight.w600),
-                                      ),
-                                      Text(
-                                        'Roll No: ${student.rollNo ?? '-'}  •  ID: ${student.studentUniqueId ?? '-'}',
-                                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade700),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (student.fatherName != null && student.fatherName!.isNotEmpty) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 10),
-                                child: Divider(height: 1, color: Color(0xFFF1F5F9)),
-                              ),
-                              Row(
-                                children: [
-                                  const Icon(Icons.person_outline_rounded, size: 16, color: Colors.grey),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Father Name: ${student.fatherName}',
-                                    style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF334155), fontWeight: FontWeight.w500),
-                                  ),
-                                ],
-                              ),
-                            ],
-                            if (student.motherName != null && student.motherName!.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Icon(Icons.face_outline_rounded, size: 16, color: Colors.grey),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Mother Name: ${student.motherName}',
-                                    style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF334155), fontWeight: FontWeight.w500),
-                                  ),
-                                ],
-                              ),
-                            ],
-                            if (student.hasPendingRequest == true) ...[
-                              const SizedBox(height: 10),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.orange.shade200),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800, size: 16),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        'Pending update request already exists for this student.',
-                                        style: GoogleFonts.poppins(fontSize: 11, color: Colors.orange.shade900, fontWeight: FontWeight.w500),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
                       // PHOTO CAPTURE SECTION CARD
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
@@ -463,10 +503,10 @@ class _StudentImageSingleUploadScreenState extends State<StudentImageSingleUploa
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Capture Photos via Camera',
-                              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
+                              'Select or Capture Photos',
+                              style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 12),
 
                             // Student Profile Photo
                             _buildSinglePhotoTile(
@@ -475,25 +515,23 @@ class _StudentImageSingleUploadScreenState extends State<StudentImageSingleUploa
                               imageFile: _studentProfileImage,
                               currentPhotoUrl: currentPhotos?.studentPhotoUrl,
                             ),
-                            const SizedBox(height: 14),
 
                             // Father Photo
                             _buildSinglePhotoTile(
-                              title: 'Father Photo (Optional)',
+                              title: 'Father Photo',
                               type: 'father',
                               imageFile: _fatherImage,
                               currentPhotoUrl: currentPhotos?.fatherPhotoUrl,
                             ),
-                            const SizedBox(height: 14),
 
                             // Mother Photo
                             _buildSinglePhotoTile(
-                              title: 'Mother Photo (Optional)',
+                              title: 'Mother Photo',
                               type: 'mother',
                               imageFile: _motherImage,
                               currentPhotoUrl: currentPhotos?.motherPhotoUrl,
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 10),
 
                             // Submit Button
                             Obx(() {
@@ -501,20 +539,20 @@ class _StudentImageSingleUploadScreenState extends State<StudentImageSingleUploa
 
                               return SizedBox(
                                 width: double.infinity,
-                                height: 48,
+                                height: 44,
                                 child: ElevatedButton.icon(
                                   onPressed: isSubmitting ? null : _handleSubmit,
                                   icon: isSubmitting
-                                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                                      : const Icon(Icons.cloud_upload_rounded, color: Colors.white, size: 20),
+                                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                      : const Icon(Icons.cloud_upload_rounded, color: Colors.white, size: 18),
                                   label: Text(
                                     isSubmitting ? 'Submitting Request...' : 'Submit Photo Request',
-                                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                    style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF4F46E5),
-                                    elevation: 2,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    elevation: 1,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                   ),
                                 ),
                               );
