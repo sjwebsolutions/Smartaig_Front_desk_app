@@ -403,36 +403,40 @@ class _QrAttendanceScannerScreenState extends State<QrAttendanceScannerScreen>
             ),
 
             // Animated Laser Line
-            AnimatedBuilder(
-              animation: _laserAnimation,
-              builder: (context, child) {
-                return Positioned(
-                  top: _laserAnimation.value * (boxSize - 60) + 30,
-                  left: 24,
-                  right: 24,
-                  child: Container(
-                    height: 2.5,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          Color(0xFF22C55E),
-                          Color(0xFF4ADE80),
-                          Color(0xFF22C55E),
-                          Colors.transparent,
+            Positioned(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: 24,
+              child: AnimatedBuilder(
+                animation: _laserAnimation,
+                builder: (context, child) {
+                  return Align(
+                    alignment: Alignment(0, _laserAnimation.value * 2 - 1),
+                    child: Container(
+                      height: 2.5,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Color(0xFF22C55E),
+                            Color(0xFF4ADE80),
+                            Color(0xFF22C55E),
+                            Colors.transparent,
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF22C55E).withValues(alpha: 0.8),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
                         ],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF22C55E).withValues(alpha: 0.8),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ],
         );

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -73,6 +74,57 @@ class _LiveFaceCameraScreenState extends State<LiveFaceCameraScreen> {
     }
   }
 
+  Future<XFile> _cropImageToBoxAspect(XFile photo, double targetAspectRatio) async {
+    try {
+      final bytes = await File(photo.path).readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frameInfo = await codec.getNextFrame();
+      final image = frameInfo.image;
+
+      final double imgW = image.width.toDouble();
+      final double imgH = image.height.toDouble();
+      final double imgAspect = imgW / imgH;
+
+      double cropW, cropH, cropX, cropY;
+
+      if (imgAspect > targetAspectRatio) {
+        cropH = imgH;
+        cropW = imgH * targetAspectRatio;
+        cropX = (imgW - cropW) / 2;
+        cropY = 0;
+      } else {
+        cropW = imgW;
+        cropH = imgW / targetAspectRatio;
+        cropX = 0;
+        cropY = (imgH - cropH) / 2;
+      }
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, cropW, cropH));
+      canvas.drawImageRect(
+        image,
+        Rect.fromLTWH(cropX, cropY, cropW, cropH),
+        Rect.fromLTWH(0, 0, cropW, cropH),
+        Paint()..filterQuality = FilterQuality.high,
+      );
+
+      final picture = recorder.endRecording();
+      final croppedUiImage = await picture.toImage(cropW.toInt(), cropH.toInt());
+      final byteData = await croppedUiImage.toByteData(format: ui.ImageByteFormat.png);
+
+      if (byteData == null) return photo;
+
+      final tempDir = await Directory.systemTemp.createTemp();
+      final croppedFile = File('${tempDir.path}/cropped_face_${DateTime.now().millisecondsSinceEpoch}.png');
+      await croppedFile.writeAsBytes(byteData.buffer.asUint8List());
+
+      return XFile(croppedFile.path);
+    } catch (e) {
+      debugPrint('Error cropping photo: $e');
+      return photo;
+    }
+  }
+
   Future<void> _takePicture() async {
     if (_cameraController == null || !_cameraController!.value.isInitialized || _isCapturing) {
       return;
@@ -80,10 +132,21 @@ class _LiveFaceCameraScreenState extends State<LiveFaceCameraScreen> {
 
     try {
       setState(() => _isCapturing = true);
+
+      final mediaQuery = MediaQuery.of(context);
+      final boxWidth = mediaQuery.size.width - 32;
+      final boxHeight = mediaQuery.size.height * 0.32;
+      final targetAspectRatio = boxWidth / boxHeight;
+
       final photo = await _cameraController!.takePicture();
-      setState(() {
-        _capturedImage = photo;
-      });
+
+      final croppedPhoto = await _cropImageToBoxAspect(photo, targetAspectRatio);
+
+      if (mounted) {
+        setState(() {
+          _capturedImage = croppedPhoto;
+        });
+      }
     } catch (e) {
       debugPrint('Error taking picture: $e');
     } finally {
@@ -165,13 +228,53 @@ class _LiveFaceCameraScreenState extends State<LiveFaceCameraScreen> {
                 ),
               ),
 
+              // Top Guide Message Badge (Outside Camera Box)
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 2, bottom: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.person_pin_rounded, color: Color(0xFF4F46E5), size: 18),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          _capturedImage != null
+                              ? 'Face aligned inside silhouette'
+                              : 'Align face & shoulders inside outline',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF2C3E50),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               // Live Camera Card Container behind Person Dummy with Reduced Height & Bold Border Line
               Expanded(
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Container(
-                      height: screenHeight * 0.54,
+                      height: screenHeight * 0.36,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.black,
@@ -221,44 +324,6 @@ class _LiveFaceCameraScreenState extends State<LiveFaceCameraScreen> {
                             CustomPaint(
                               painter: FaceHeadShouldersOverlayPainter(),
                             ),
-
-                            // Top Guide Message Badge
-                            Positioned(
-                              top: 14,
-                              left: 12,
-                              right: 12,
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.75),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.white, width: 1.5),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.person_pin_rounded, color: Colors.white, size: 18),
-                                      const SizedBox(width: 8),
-                                      Flexible(
-                                        child: Text(
-                                          _capturedImage != null
-                                              ? 'Face aligned inside silhouette'
-                                              : 'Align face & shoulders inside outline',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -267,9 +332,11 @@ class _LiveFaceCameraScreenState extends State<LiveFaceCameraScreen> {
                 ),
               ),
 
+              const SizedBox(height: 20),
+
               // Bottom Control Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.only(bottom: 20, left: 14, right: 14),
                 child: _capturedImage == null
                     ? Center(
                         child: GestureDetector(
@@ -370,7 +437,9 @@ class FaceHeadShouldersOverlayPainter extends CustomPainter {
     final double w = size.width;
     final double h = size.height;
     final double cx = w / 2;
-    final double cy = h * 0.42;
+    final double cy = h * 0.50; /// person ke uper space kam
+    const double scaleX = 0.95; /// person ka width kam
+    const double scaleY = 1.25;
 
     // BOLD Outline Paint
     final Paint outlinePaint = Paint()
@@ -407,67 +476,67 @@ class FaceHeadShouldersOverlayPainter extends CustomPainter {
 
     // Head outline
     final Path head = Path()
-      ..moveTo(cx, cy - h * 0.22)
-      ..cubicTo(cx + w * 0.06, cy - h * 0.25,
-          cx + w * 0.13, cy - h * 0.22,
-          cx + w * 0.16, cy - h * 0.18)
-      ..lineTo(cx + w * 0.12, cy - h * 0.19)
-      ..cubicTo(cx + w * 0.20, cy - h * 0.17,
-          cx + w * 0.22, cy - h * 0.10,
-          cx + w * 0.21, cy - h * 0.05)
+      ..moveTo(cx, cy - h * 0.22 * scaleY)
+      ..cubicTo(cx + w * 0.06 * scaleX, cy - h * 0.25 * scaleY,
+          cx + w * 0.13 * scaleX, cy - h * 0.22 * scaleY,
+          cx + w * 0.16 * scaleX, cy - h * 0.18 * scaleY)
+      ..lineTo(cx + w * 0.12 * scaleX, cy - h * 0.19 * scaleY)
+      ..cubicTo(cx + w * 0.20 * scaleX, cy - h * 0.17 * scaleY,
+          cx + w * 0.22 * scaleX, cy - h * 0.10 * scaleY,
+          cx + w * 0.21 * scaleX, cy - h * 0.05 * scaleY)
     // Right ear
-      ..cubicTo(cx + w * 0.27, cy - h * 0.06,
-          cx + w * 0.26, cy + h * 0.02,
-          cx + w * 0.20, cy + h * 0.03)
+      ..cubicTo(cx + w * 0.27 * scaleX, cy - h * 0.06 * scaleY,
+          cx + w * 0.26 * scaleX, cy + h * 0.02 * scaleY,
+          cx + w * 0.20 * scaleX, cy + h * 0.03 * scaleY)
     // Right jaw
-      ..cubicTo(cx + w * 0.17, cy + h * 0.11,
-          cx + w * 0.09, cy + h * 0.16,
-          cx, cy + h * 0.16)
+      ..cubicTo(cx + w * 0.17 * scaleX, cy + h * 0.11 * scaleY,
+          cx + w * 0.09 * scaleX, cy + h * 0.16 * scaleY,
+          cx, cy + h * 0.16 * scaleY)
     // Left jaw
-      ..cubicTo(cx - w * 0.09, cy + h * 0.16,
-          cx - w * 0.17, cy + h * 0.11,
-          cx - w * 0.20, cy + h * 0.03)
+      ..cubicTo(cx - w * 0.09 * scaleX, cy + h * 0.16 * scaleY,
+          cx - w * 0.17 * scaleX, cy + h * 0.11 * scaleY,
+          cx - w * 0.20 * scaleX, cy + h * 0.03 * scaleY)
     // Left ear
-      ..cubicTo(cx - w * 0.26, cy + h * 0.02,
-          cx - w * 0.27, cy - h * 0.06,
-          cx - w * 0.21, cy - h * 0.05)
-      ..cubicTo(cx - w * 0.22, cy - h * 0.10,
-          cx - w * 0.19, cy - h * 0.17,
-          cx - w * 0.12, cy - h * 0.19)
-      ..lineTo(cx - w * 0.16, cy - h * 0.18)
-      ..cubicTo(cx - w * 0.11, cy - h * 0.23,
-          cx - w * 0.04, cy - h * 0.23,
-          cx, cy - h * 0.22);
+      ..cubicTo(cx - w * 0.26 * scaleX, cy + h * 0.02 * scaleY,
+          cx - w * 0.27 * scaleX, cy - h * 0.06 * scaleY,
+          cx - w * 0.21 * scaleX, cy - h * 0.05 * scaleY)
+      ..cubicTo(cx - w * 0.22 * scaleX, cy - h * 0.10 * scaleY,
+          cx - w * 0.19 * scaleX, cy - h * 0.17 * scaleY,
+          cx - w * 0.12 * scaleX, cy - h * 0.19 * scaleY)
+      ..lineTo(cx - w * 0.16 * scaleX, cy - h * 0.18 * scaleY)
+      ..cubicTo(cx - w * 0.11 * scaleX, cy - h * 0.23 * scaleY,
+          cx - w * 0.04 * scaleX, cy - h * 0.23 * scaleY,
+          cx, cy - h * 0.22 * scaleY);
 
     // Neck and shoulders
     final Path body = Path()
-      ..moveTo(cx - w * 0.13, cy + h * 0.13)
-      ..cubicTo(cx - w * 0.13, cy + h * 0.20,
-          cx - w * 0.16, cy + h * 0.22,
-          cx - w * 0.25, cy + h * 0.25)
-      ..cubicTo(cx - w * 0.38, cy + h * 0.30,
-          cx - w * 0.43, cy + h * 0.33,
-          cx - w * 0.43, cy + h * 0.38);
+      ..moveTo(cx - w * 0.13 * scaleX, cy + h * 0.13 * scaleY)
+      ..cubicTo(cx - w * 0.13 * scaleX, cy + h * 0.20 * scaleY,
+          cx - w * 0.16 * scaleX, cy + h * 0.22 * scaleY,
+          cx - w * 0.25 * scaleX, cy + h * 0.25 * scaleY)
+      ..cubicTo(cx - w * 0.38 * scaleX, cy + h * 0.30 * scaleY,
+          cx - w * 0.43 * scaleX, cy + h * 0.33 * scaleY,
+          cx - w * 0.43 * scaleX, cy + h * 0.38 * scaleY);
 
     body
-      ..moveTo(cx + w * 0.13, cy + h * 0.13)
-      ..cubicTo(cx + w * 0.13, cy + h * 0.20,
-          cx + w * 0.16, cy + h * 0.22,
-          cx + w * 0.25, cy + h * 0.25)
-      ..cubicTo(cx + w * 0.38, cy + h * 0.30,
-          cx + w * 0.43, cy + h * 0.33,
-          cx + w * 0.43, cy + h * 0.38);
+      ..moveTo(cx + w * 0.13 * scaleX, cy + h * 0.13 * scaleY)
+      ..cubicTo(cx + w * 0.13 * scaleX, cy + h * 0.20 * scaleY,
+          cx + w * 0.16 * scaleX, cy + h * 0.22 * scaleY,
+          cx + w * 0.25 * scaleX, cy + h * 0.25 * scaleY)
+      ..cubicTo(cx + w * 0.38 * scaleX, cy + h * 0.30 * scaleY,
+          cx + w * 0.43 * scaleX, cy + h * 0.33 * scaleY,
+          cx + w * 0.43 * scaleX, cy + h * 0.38 * scaleY);
 
     // T-shirt neckline
     final Path neckline = Path()
-      ..moveTo(cx - w * 0.20, cy + h * 0.27)
-      ..quadraticBezierTo(cx, cy + h * 0.37,
-          cx + w * 0.20, cy + h * 0.27);
+      ..moveTo(cx - w * 0.20 * scaleX, cy + h * 0.27 * scaleY)
+      ..quadraticBezierTo(cx, cy + h * 0.37 * scaleY,
+          cx + w * 0.20 * scaleX, cy + h * 0.27 * scaleY);
 
     // Bottom horizontal base line
     final Path bottomLine = Path()
-      ..moveTo(cx - w * 0.43, cy + h * 0.38)
-      ..lineTo(cx + w * 0.43, cy + h * 0.38);
+      ..moveTo(cx - w * 0.43 * scaleX, cy + h * 0.38 * scaleY)
+      ..lineTo(cx + w * 0.43 * scaleX, cy + h * 0.38 * scaleY);
 
     for (final path in [head, body, neckline, bottomLine]) {
       canvas.drawPath(path, shadowPaint);
