@@ -101,6 +101,7 @@ class EventScanController extends GetxController {
   }
 
   var isScanning = false.obs;
+  var isSubmittingCheckin = false.obs;
 
   Future<Map<String, dynamic>> scanEventPass(String passCode) async {
     isScanning.value = true;
@@ -116,6 +117,153 @@ class EventScanController extends GetxController {
       rethrow;
     } finally {
       isScanning.value = false;
+    }
+  }
+
+  Future<PassCheckinResponseModel> checkInAttendees({
+    dynamic passId,
+    String? passNumber,
+    required List<dynamic> attendeeIds,
+    String? gateName,
+    String? remarks,
+  }) async {
+    isSubmittingCheckin.value = true;
+    try {
+      final res = await _service.checkInAttendees(
+        passId: passId,
+        passNumber: passNumber,
+        attendeeIds: attendeeIds,
+        gateName: gateName ?? (filterGateName.value.isEmpty ? null : filterGateName.value),
+        remarks: remarks,
+      );
+      await fetchTodayScans(isSilent: true);
+      return res;
+    } catch (e) {
+      rethrow;
+    } finally {
+      isSubmittingCheckin.value = false;
+    }
+  }
+
+  var isSearchingStudents = false.obs;
+  var searchedStudents = <EventSearchStudentItem>[].obs;
+  var searchStudentError = ''.obs;
+
+  Future<void> searchStudentsForEvent({required dynamic eventId, required String query}) async {
+    if (query.trim().isEmpty) {
+      searchedStudents.clear();
+      searchStudentError.value = '';
+      return;
+    }
+
+    isSearchingStudents.value = true;
+    searchStudentError.value = '';
+
+    try {
+      final res = await _service.searchStudents(eventId: eventId, query: query);
+      if (res.success == true && res.data != null) {
+        searchedStudents.value = res.data!;
+      } else {
+        searchedStudents.clear();
+        searchStudentError.value = 'No student records found.';
+      }
+    } catch (e) {
+      searchedStudents.clear();
+      searchStudentError.value = AppErrorFormatter.format(e);
+    } finally {
+      isSearchingStudents.value = false;
+    }
+  }
+
+  var isLoadingApplications = false.obs;
+  var passApplications = <PassApplicationItem>[].obs;
+  var passApplicationsError = ''.obs;
+
+  Future<void> fetchPassApplications({dynamic eventId, bool isManualRefresh = false}) async {
+    isLoadingApplications.value = true;
+    passApplicationsError.value = '';
+
+    try {
+      final targetEventId = eventId ?? (filterEventId.value.isNotEmpty ? filterEventId.value : '1');
+      final res = await _service.fetchPassApplications(eventId: targetEventId);
+      if (res.success == true && res.data != null) {
+        passApplications.value = res.data!;
+      } else {
+        passApplications.clear();
+        passApplicationsError.value = 'No pass applications found.';
+      }
+    } catch (e) {
+      passApplications.clear();
+      passApplicationsError.value = AppErrorFormatter.format(e);
+    } finally {
+      isLoadingApplications.value = false;
+    }
+  }
+
+  var isIssuingWalkInPass = false.obs;
+
+  Future<IssueWalkInPassResponseModel> issueWalkInPass({
+    required dynamic eventId,
+    required dynamic studentId,
+    bool autoApprove = true,
+    bool autoCheckin = true,
+    String? gateName,
+    String? remarks,
+    required String personType,
+    required String attendeeName,
+    required String mobileNo,
+    String? whatsappNo,
+    String? aadhaarNumber,
+    dynamic photoFile,
+    String? existingPhotoPath,
+  }) async {
+    isIssuingWalkInPass.value = true;
+    try {
+      final res = await _service.issueWalkInPass(
+        eventId: eventId,
+        studentId: studentId,
+        autoApprove: autoApprove,
+        autoCheckin: autoCheckin,
+        gateName: gateName ?? (filterGateName.value.isNotEmpty ? filterGateName.value : 'main gate'),
+        remarks: remarks ?? 'Walk-in entry issued at gate',
+        personType: personType,
+        attendeeName: attendeeName,
+        mobileNo: mobileNo,
+        whatsappNo: whatsappNo,
+        aadhaarNumber: aadhaarNumber,
+        photoFile: photoFile,
+        existingPhotoPath: existingPhotoPath,
+      );
+      await fetchPassApplications(eventId: eventId, isManualRefresh: true);
+      return res;
+    } catch (e) {
+      rethrow;
+    } finally {
+      isIssuingWalkInPass.value = false;
+    }
+  }
+
+  var isUpdatingPassStatus = false.obs;
+
+  Future<UpdatePassStatusResponseModel> updatePassStatus({
+    required dynamic passId,
+    required String action,
+    String? remarks,
+    dynamic eventId,
+  }) async {
+    isUpdatingPassStatus.value = true;
+    try {
+      final res = await _service.updatePassStatus(
+        passId: passId,
+        action: action,
+        remarks: remarks,
+      );
+      await fetchPassApplications(eventId: eventId, isManualRefresh: true);
+      return res;
+    } catch (e) {
+      rethrow;
+    } finally {
+      isUpdatingPassStatus.value = false;
     }
   }
 }

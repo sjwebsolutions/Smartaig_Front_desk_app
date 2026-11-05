@@ -28,6 +28,15 @@
 	<string>Front Desk App needs camera access to scan Student and Staff Attendance QR codes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Front Desk App needs photo library access for profile and verification pictures.</string>
+	<key>io.flutter.embedded_views_preview</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+	</dict>
 	<key>INIntentsSupported</key>
 	<array>
 		<string>Intent</string>

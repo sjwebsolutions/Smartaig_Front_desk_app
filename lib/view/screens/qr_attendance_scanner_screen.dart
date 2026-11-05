@@ -370,13 +370,9 @@ class _QrAttendanceScannerScreenState extends State<QrAttendanceScannerScreen>
 
   // Scanner Viewfinder Overlay with Animated Laser Line
   Widget _buildScannerOverlay() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final boxSize = constraints.maxWidth;
-
-        return Stack(
-          alignment: Alignment.center,
-          children: [
+    return Stack(
+      alignment: Alignment.center,
+      children: [
             // Top-Left Corner
             Positioned(
               top: 16,
@@ -440,8 +436,6 @@ class _QrAttendanceScannerScreenState extends State<QrAttendanceScannerScreen>
             ),
           ],
         );
-      },
-    );
   }
 
   Widget _buildCorner({required bool isTop, required bool isLeft}) {

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../../Widgets/custom_shimmer.dart';
 import '../../Widgets/menu.dart';
 import '../../Widgets/modules.dart';
+import '../../models/active_event_model.dart';
 import '../../models/dashboard_model.dart';
 import '../../services/app_update_service.dart';
 import '../../utils/app_error_formatter.dart';
+import '../../view_models/get_x/active_event_controller.dart';
 import '../../view_models/get_x/dashboard_controller.dart';
 import '../../view_models/get_x/notification_history_controller.dart';
 import '../../view_models/get_x/policies_controller.dart';
@@ -226,6 +229,9 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
                           _buildStaffProfileCard(staff, school),
                           const SizedBox(height: 10),
 
+                          // 1.5 LIVE TELECAST VIDEO PLAYER (IF ACTIVE)
+                          const DashboardLiveTelecastWidget(),
+
                           // 2. TODAY'S OVERVIEW / STATS
                           if (todayInfo != null || todayStats != null) ...[
                             _buildTodayStatsSection(todayInfo, todayStats),
@@ -317,27 +323,27 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
-              width: 62,
-              height: 62,
+              width: 78,
+              height: 78,
               color: const Color(0xFFE8EAF6),
               child: imageUrl != null && imageUrl.isNotEmpty
                   ? Image.network(
                       imageUrl,
                       key: ValueKey(imageUrl),
-                      width: 62,
-                      height: 62,
+                      width: 78,
+                      height: 78,
                       fit: BoxFit.cover,
                       gaplessPlayback: true,
                       errorBuilder: (context, error, stackTrace) {
                         return const Center(
-                          child: Icon(Icons.person, size: 34, color: Color(0xFF4E54C8)),
+                          child: Icon(Icons.person, size: 42, color: Color(0xFF4E54C8)),
                         );
                       },
                     )
                   : const Center(
-                      child: Icon(Icons.person, size: 34, color: Color(0xFF4E54C8)),
+                      child: Icon(Icons.person, size: 42, color: Color(0xFF4E54C8)),
                     ),
             ),
           ),
@@ -1020,8 +1026,203 @@ class _FrontDeskDashboardState extends State<FrontDeskDashboard> {
       ),
     );
   }
+}
 
+// -------------------------------------------------
+// LIVE TELECAST YOUTUBE EMBED PLAYER WIDGET FOR DASHBOARD
+// -------------------------------------------------
+class DashboardLiveTelecastWidget extends StatelessWidget {
+  const DashboardLiveTelecastWidget({super.key});
 
+  static String? _extractVideoId(String? rawUrl, String? rawId) {
+    if (rawId != null && rawId.trim().isNotEmpty && rawId != 'null') {
+      return rawId.trim();
+    }
+    if (rawUrl == null || rawUrl.trim().isEmpty || rawUrl == 'null') {
+      return null;
+    }
+    final cleanUrl = rawUrl.trim();
+    String? parsedId = YoutubePlayer.convertUrlToId(cleanUrl);
+    if (parsedId != null && parsedId.isNotEmpty) {
+      return parsedId;
+    }
+    final regExp = RegExp(
+      r'^.*(?:youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|live\/|watch\?v=|\&v=)([^#\&\?]*).*',
+      caseSensitive: false,
+    );
+    final match = regExp.firstMatch(cleanUrl);
+    if (match != null && match.groupCount >= 1) {
+      return match.group(1);
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activeController = Get.isRegistered<ActiveEventController>()
+        ? Get.find<ActiveEventController>()
+        : Get.put(ActiveEventController());
+
+    return Obx(() {
+      final events = activeController.activeEvents;
+      if (events.isEmpty) return const SizedBox.shrink();
+
+      final liveEvent = events.firstWhereOrNull((ActiveEventItem e) {
+        return e.liveTelecast?.isLive == true;
+      });
+
+      if (liveEvent == null) {
+        return const SizedBox.shrink();
+      }
+
+      final telecast = liveEvent.liveTelecast;
+      final videoId = _extractVideoId(
+        telecast?.youtubeUrl ?? telecast?.embedUrl,
+        telecast?.youtubeVideoId,
+      );
+
+      if (videoId == null || videoId.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      return DashboardYoutubePlayerCard(
+        videoId: videoId,
+        isLive: true,
+      );
+    });
+  }
+}
+
+class DashboardYoutubePlayerCard extends StatefulWidget {
+  final String videoId;
+  final bool isLive;
+
+  const DashboardYoutubePlayerCard({
+    super.key,
+    required this.videoId,
+    required this.isLive,
+  });
+
+  @override
+  State<DashboardYoutubePlayerCard> createState() => _DashboardYoutubePlayerCardState();
+}
+
+class _DashboardYoutubePlayerCardState extends State<DashboardYoutubePlayerCard> {
+  late YoutubePlayerController _ytController;
+
+  @override
+  void initState() {
+    super.initState();
+    _ytController = YoutubePlayerController(
+      initialVideoId: widget.videoId,
+      flags: const YoutubePlayerFlags(
+        autoPlay: false,
+        mute: false,
+        isLive: false,
+        forceHD: false,
+        enableCaption: true,
+      ),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant DashboardYoutubePlayerCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoId != widget.videoId) {
+      _ytController.load(widget.videoId);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ytController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: widget.isLive ? const Color(0xFFFECACA) : const Color(0xFFE2E8F0),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: widget.isLive ? const Color(0xFFDC2626).withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // LIVE TELECAST Badge Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: widget.isLive ? const Color(0xFFFEF2F2) : const Color(0xFFEEF2FF),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: widget.isLive ? const Color(0xFFFECACA) : const Color(0xFFC7D2FE),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: widget.isLive ? const Color(0xFFDC2626) : const Color(0xFF4F46E5),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        widget.isLive ? 'LIVE TELECAST' : 'EVENT VIDEO',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: widget.isLive ? const Color(0xFFDC2626) : const Color(0xFF4F46E5),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Embedded YouTube Player
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: YoutubePlayer(
+                controller: _ytController,
+                showVideoProgressIndicator: true,
+                progressIndicatorColor: const Color(0xFFDC2626),
+                progressColors: const ProgressBarColors(
+                  playedColor: Color(0xFFDC2626),
+                  handleColor: Color(0xFFDC2626),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 

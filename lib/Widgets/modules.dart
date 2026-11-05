@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../view/screens/admission_screen.dart';
 import '../view/screens/call_back_screen.dart';
+import '../view/screens/event_entry_screen.dart';
 import '../view/screens/events_screen.dart';
 import '../view/screens/get_pass_screen.dart';
 import '../view/screens/qr_attendance_scanner_screen.dart';
@@ -116,12 +117,23 @@ class DashboardModulesWidget extends StatelessWidget {
           onClear: () {},
         ),
         DashboardModuleItem(
-          title: 'Event E-Pass',
-          icon: Icons.event_rounded,
+          title: 'Event Entry',
+          icon: Icons.confirmation_number_rounded,
           cardBg: const Color(0xFFFFF7ED),
           cardBorder: const Color(0xFFFFEDD5),
           iconBg: const Color(0xFFFFEDD5),
           iconColor: const Color(0xFFEA580C),
+          screen: const EventEntryScreen(),
+          badgeCount: 0,
+          onClear: () {},
+        ),
+        DashboardModuleItem(
+          title: 'Verify E Pass',
+          icon: Icons.qr_code_scanner_rounded,
+          cardBg: const Color(0xFFEEF2FF),
+          cardBorder: const Color(0xFFC7D2FE),
+          iconBg: const Color(0xFFE0E7FF),
+          iconColor: const Color(0xFF4F46E5),
           screen: const EventsScreen(),
           badgeCount: 0,
           onClear: () {},

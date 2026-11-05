@@ -4,12 +4,14 @@ class CustomShimmer extends StatefulWidget {
   final Widget child;
   final Color baseColor;
   final Color highlightColor;
+  final Duration duration;
 
   const CustomShimmer({
     super.key,
     required this.child,
-    this.baseColor = const Color(0xFFCBD5E1),
+    this.baseColor = const Color(0xFFE2E8F0),
     this.highlightColor = const Color(0xFFFFFFFF),
+    this.duration = const Duration(milliseconds: 1200),
   });
 
   @override
@@ -19,14 +21,20 @@ class CustomShimmer extends StatefulWidget {
 class _CustomShimmerState extends State<CustomShimmer>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1300),
+      duration: widget.duration,
     )..repeat();
+
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOutSine,
+    );
   }
 
   @override
@@ -38,20 +46,23 @@ class _CustomShimmerState extends State<CustomShimmer>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller,
+      animation: _animation,
       builder: (context, child) {
+        final value = _animation.value;
         return ShaderMask(
           blendMode: BlendMode.srcATop,
           shaderCallback: (bounds) {
             return LinearGradient(
-              begin: Alignment(-2.0 + (_controller.value * 4.0), -0.2),
-              end: Alignment(-1.0 + (_controller.value * 4.0), 0.2),
+              begin: Alignment(-2.5 + (value * 5.0), -0.4),
+              end: Alignment(-1.0 + (value * 5.0), 0.4),
               colors: [
                 widget.baseColor.withValues(alpha: 0.35),
-                widget.highlightColor,
+                widget.baseColor.withValues(alpha: 0.60),
+                widget.highlightColor.withValues(alpha: 0.95),
+                widget.baseColor.withValues(alpha: 0.60),
                 widget.baseColor.withValues(alpha: 0.35),
               ],
-              stops: const [0.1, 0.5, 0.9],
+              stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
             ).createShader(bounds);
           },
           child: widget.child,
@@ -82,7 +93,7 @@ class ShimmerBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: color ?? const Color(0xFFCBD5E1),
+        color: color ?? const Color(0xFFE2E8F0),
         borderRadius: BorderRadius.circular(borderRadius),
       ),
     );
@@ -97,28 +108,27 @@ class DashboardShimmerSkeleton extends StatelessWidget {
     return CustomShimmer(
       child: SingleChildScrollView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Top App Bar Skeleton
+            // 1. App Bar Header Skeleton
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const ShimmerBox(width: 38, height: 38, borderRadius: 19),
-                const ShimmerBox(width: 130, height: 20, borderRadius: 8),
-                const ShimmerBox(width: 38, height: 38, borderRadius: 19),
+              children: const [
+                ShimmerBox(width: 34, height: 34, borderRadius: 17),
+                ShimmerBox(width: 130, height: 20, borderRadius: 8),
+                ShimmerBox(width: 34, height: 34, borderRadius: 17),
               ],
             ),
             const SizedBox(height: 14),
 
-            // 2. Profile / Welcome Card Skeleton
+            // 2. Profile Glass Card Skeleton
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white, width: 1.5),
+                color: Colors.white.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.03),
@@ -129,7 +139,7 @@ class DashboardShimmerSkeleton extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const ShimmerBox(width: 52, height: 52, borderRadius: 26),
+                  const ShimmerBox(width: 78, height: 78, borderRadius: 14),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -137,105 +147,90 @@ class DashboardShimmerSkeleton extends StatelessWidget {
                       children: const [
                         ShimmerBox(width: 150, height: 16, borderRadius: 6),
                         SizedBox(height: 8),
-                        ShimmerBox(width: 190, height: 12, borderRadius: 6),
+                        ShimmerBox(width: 90, height: 12, borderRadius: 5),
+                        SizedBox(height: 6),
+                        ShimmerBox(width: 120, height: 11, borderRadius: 4),
                       ],
                     ),
                   ),
-                  const ShimmerBox(width: 24, height: 24, borderRadius: 12),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
-            // 3. Today Stats Row Skeleton
+            // 3. Stats Grid Skeleton (2 Cards)
             Row(
               children: [
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white, width: 1.2),
+                      color: Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        ShimmerBox(width: 32, height: 32, borderRadius: 16),
-                        SizedBox(height: 10),
-                        ShimmerBox(width: 36, height: 22, borderRadius: 6),
-                        SizedBox(height: 6),
-                        ShimmerBox(width: 60, height: 10, borderRadius: 4),
+                    child: Row(
+                      children: [
+                        const ShimmerBox(width: 42, height: 42, borderRadius: 10),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            ShimmerBox(width: 38, height: 18, borderRadius: 5),
+                            SizedBox(height: 6),
+                            ShimmerBox(width: 65, height: 10, borderRadius: 4),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white, width: 1.2),
+                      color: Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        ShimmerBox(width: 32, height: 32, borderRadius: 16),
-                        SizedBox(height: 10),
-                        ShimmerBox(width: 36, height: 22, borderRadius: 6),
-                        SizedBox(height: 6),
-                        ShimmerBox(width: 60, height: 10, borderRadius: 4),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white, width: 1.2),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        ShimmerBox(width: 32, height: 32, borderRadius: 16),
-                        SizedBox(height: 10),
-                        ShimmerBox(width: 36, height: 22, borderRadius: 6),
-                        SizedBox(height: 6),
-                        ShimmerBox(width: 60, height: 10, borderRadius: 4),
+                    child: Row(
+                      children: [
+                        const ShimmerBox(width: 42, height: 42, borderRadius: 10),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            ShimmerBox(width: 38, height: 18, borderRadius: 5),
+                            SizedBox(height: 6),
+                            ShimmerBox(width: 65, height: 10, borderRadius: 4),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // 4. Section Header Skeleton
-            const ShimmerBox(width: 120, height: 16, borderRadius: 6),
+            // 4. Modules Section Title
+            const ShimmerBox(width: 140, height: 16, borderRadius: 6),
             const SizedBox(height: 12),
 
-            // 5. 2x2 Modules Grid Skeleton
+            // 5. Modules Grid Skeleton (2x2)
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 1.35,
+              childAspectRatio: 1.3,
               children: List.generate(
                 4,
                 (index) => Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white, width: 1.2),
+                    color: Colors.white.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,73 +238,17 @@ class DashboardShimmerSkeleton extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          ShimmerBox(width: 40, height: 40, borderRadius: 12),
-                          ShimmerBox(width: 28, height: 18, borderRadius: 9),
+                          ShimmerBox(width: 38, height: 38, borderRadius: 10),
+                          ShimmerBox(width: 22, height: 22, borderRadius: 11),
                         ],
                       ),
                       Spacer(),
-                      ShimmerBox(width: 110, height: 14, borderRadius: 6),
-                      SizedBox(height: 6),
-                      ShimmerBox(width: 75, height: 10, borderRadius: 4),
+                      ShimmerBox(width: 100, height: 13, borderRadius: 5),
+                      SizedBox(height: 5),
+                      ShimmerBox(width: 70, height: 10, borderRadius: 4),
                     ],
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // 6. Recent Requests Section Skeleton
-            const ShimmerBox(width: 150, height: 16, borderRadius: 6),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white, width: 1.2),
-              ),
-              child: Row(
-                children: [
-                  const ShimmerBox(width: 42, height: 42, borderRadius: 21),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        ShimmerBox(width: 130, height: 14, borderRadius: 5),
-                        SizedBox(height: 6),
-                        ShimmerBox(width: 90, height: 10, borderRadius: 4),
-                      ],
-                    ),
-                  ),
-                  const ShimmerBox(width: 60, height: 22, borderRadius: 11),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white, width: 1.2),
-              ),
-              child: Row(
-                children: [
-                  const ShimmerBox(width: 42, height: 42, borderRadius: 21),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        ShimmerBox(width: 140, height: 14, borderRadius: 5),
-                        SizedBox(height: 6),
-                        ShimmerBox(width: 100, height: 10, borderRadius: 4),
-                      ],
-                    ),
-                  ),
-                  const ShimmerBox(width: 60, height: 22, borderRadius: 11),
-                ],
               ),
             ),
           ],

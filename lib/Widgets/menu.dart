@@ -67,8 +67,8 @@ class DashboardDrawer extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
-                          width: 52,
-                          height: 52,
+                          width: 66,
+                          height: 66,
                           color: const Color(0xFFE8EAF6),
                           child: (staff?.image != null && staff!.image!.isNotEmpty) ||
                                   (staff?.thumbnail != null && staff!.thumbnail!.isNotEmpty)
@@ -81,18 +81,18 @@ class DashboardDrawer extends StatelessWidget {
                                         ? staff.image!
                                         : staff.thumbnail!,
                                   ),
-                                  width: 52,
-                                  height: 52,
+                                  width: 66,
+                                  height: 66,
                                   fit: BoxFit.cover,
                                   gaplessPlayback: true,
                                   errorBuilder: (context, error, stackTrace) {
                                     return const Center(
-                                      child: Icon(Icons.person, size: 28, color: Color(0xFF4E54C8)),
+                                      child: Icon(Icons.person, size: 36, color: Color(0xFF4E54C8)),
                                     );
                                   },
                                 )
                               : const Center(
-                                  child: Icon(Icons.person, size: 28, color: Color(0xFF4E54C8)),
+                                  child: Icon(Icons.person, size: 36, color: Color(0xFF4E54C8)),
                                 ),
                         ),
                       ),
