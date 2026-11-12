@@ -252,7 +252,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('Title: $title | Body: $body');
   debugPrint('Payload Data: ${message.data}');
 
-  // Save unread counter and notification history in SharedPreferences
+  // Update module unread counter in SharedPreferences
   try {
     final prefs = await SharedPreferences.getInstance();
     if (categoryType == 'admission') {
@@ -274,22 +274,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       final cur = prefs.getInt('unread_callback_count') ?? 0;
       await prefs.setInt('unread_callback_count', cur + 1);
     }
-
-    final jsonStr = prefs.getString('saved_app_notifications') ?? '[]';
-    final List<dynamic> decoded = jsonDecode(jsonStr);
-    final newItem = {
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'title': title,
-      'body': body,
-      'timestamp': DateTime.now().toIso8601String(),
-      'type': categoryType,
-      'isRead': false,
-      'data': message.data,
-    };
-    decoded.insert(0, newItem);
-    await prefs.setString('saved_app_notifications', jsonEncode(decoded));
   } catch (e) {
-    debugPrint('⚠️ [FCM Background Save Error]: $e');
+    debugPrint('⚠️ [FCM Background Count Update Error]: $e');
   }
 
   // Show a local notification so the user receives a status bar banner with sound even for data messages.
@@ -1245,13 +1231,10 @@ class NotificationService {
         try { Get.find<DashboardController>().fetchDashboard(isSilent: true); } catch (_) {}
       }
 
-      // Add to NotificationHistoryController
-      NotificationHistoryController.to.addNotification(
-        title: title,
-        body: body,
-        type: categoryType,
-        data: message.data,
-      );
+      // Refresh notifications from API
+      try {
+        NotificationHistoryController.to.fetchNotifications(isRefresh: true);
+      } catch (_) {}
 
       _showNotificationBanner(message);
     });

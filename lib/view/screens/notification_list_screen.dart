@@ -17,15 +17,29 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
   final NotificationHistoryController _historyController =
       Get.put(NotificationHistoryController());
 
+  final ScrollController _scrollController = ScrollController();
   String _selectedFilter = 'all';
 
   @override
   void initState() {
     super.initState();
-    // Automatically mark all notifications as read when the screen is viewed
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _historyController.fetchNotifications(isRefresh: true);
       _historyController.markAllAsRead();
     });
+
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        _historyController.loadMoreNotifications();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -100,6 +114,55 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
               // -------------------------------------------------
               Expanded(
                 child: Obx(() {
+                  if (_historyController.isLoading.value) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF4E54C8),
+                      ),
+                    );
+                  }
+
+                  if (_historyController.errorMessage.value.isNotEmpty &&
+                      _historyController.notifications.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline_rounded,
+                                size: 48, color: Color(0xFFEF4444)),
+                            const SizedBox(height: 12),
+                            Text(
+                              _historyController.errorMessage.value,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: () => _historyController.fetchNotifications(isRefresh: true),
+                              icon: const Icon(Icons.refresh_rounded, size: 18),
+                              label: Text(
+                                'Retry',
+                                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4E54C8),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
                   final allList = _historyController.notifications;
                   final filteredList = allList.where((item) {
                     final resolvedType = (item.type == 'gate_pass' ||
@@ -125,53 +188,73 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                   }).toList();
 
                   if (filteredList.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
+                    return RefreshIndicator(
+                      onRefresh: () => _historyController.fetchNotifications(isRefresh: true),
+                      color: const Color(0xFF4E54C8),
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Container(
+                          height: MediaQuery.of(context).size.height * 0.6,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.notifications_none_rounded,
+                                    size: 50, color: Color(0xFF4E54C8)),
                               ),
-                              child: const Icon(Icons.notifications_none_rounded,
-                                  size: 50, color: Color(0xFF4E54C8)),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No Notifications Yet',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF2C3E50),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No Notifications Yet',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF2C3E50),
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Incoming push notifications for Callbacks, Student & Teacher Leaves, Gate Pass, Visitors, and Admission will appear here.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                color: const Color(0xFF64748B),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Incoming notifications for Callbacks, Student & Teacher Leaves, Gate Pass, Visitors, and Admission will appear here.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: const Color(0xFF64748B),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     );
                   }
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    itemCount: filteredList.length,
-                    itemBuilder: (context, index) {
-                      final item = filteredList[index];
-                      return _buildNotificationCard(item);
-                    },
+                  return RefreshIndicator(
+                    onRefresh: () => _historyController.fetchNotifications(isRefresh: true),
+                    color: const Color(0xFF4E54C8),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      itemCount: filteredList.length + (_historyController.isMoreLoading.value ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == filteredList.length) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Center(
+                              child: CircularProgressIndicator(color: Color(0xFF4E54C8)),
+                            ),
+                          );
+                        }
+                        final item = filteredList[index];
+                        return _buildNotificationCard(item);
+                      },
+                    ),
                   );
                 }),
               ),
@@ -230,6 +313,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                 setState(() {
                   _selectedFilter = id;
                 });
+                _historyController.fetchNotifications(module: id);
               },
             ),
           );
@@ -322,90 +406,97 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Icon(icon, color: iconColor, size: 22),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: iconBg,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              categoryLabel,
-                              style: GoogleFonts.poppins(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: iconColor,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            _formatTimeAgo(item.timestamp),
-                            style: GoogleFonts.poppins(
-                              fontSize: 10,
-                              color: const Color(0xFF94A3B8),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        item.title,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: item.isRead ? FontWeight.w600 : FontWeight.bold,
-                          color: const Color(0xFF1E293B),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: iconBg,
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ),
-                      if (item.body.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          item.body,
+                        child: Text(
+                          categoryLabel,
                           style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: const Color(0xFF64748B),
-                            height: 1.3,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: iconColor,
                           ),
                         ),
-                      ],
+                      ),
+                      Text(
+                        _getTimeAgoText(item),
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: const Color(0xFF94A3B8),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                if (!item.isRead) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEF4444),
-                      shape: BoxShape.circle,
+                  const SizedBox(height: 6),
+                  Text(
+                    item.title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: item.isRead ? FontWeight.w600 : FontWeight.bold,
+                      color: const Color(0xFF1E293B),
                     ),
                   ),
+                  if (item.body.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      item.body,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: const Color(0xFF64748B),
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        );
+            if (!item.isRead) ...[
+              const SizedBox(width: 8),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEF4444),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getTimeAgoText(AppNotificationItem item) {
+    if (item.timeAgo != null && item.timeAgo!.isNotEmpty) {
+      return item.timeAgo!;
+    }
+    return _formatTimeAgo(item.timestamp);
   }
 
   String _formatTimeAgo(DateTime dt) {
